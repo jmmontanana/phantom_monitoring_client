@@ -54,7 +54,7 @@ init_mf_plugin_CPU_perf(PluginManager *pm)
      * initialize the monitoring data
      */
     monitoring_data = malloc(sizeof(Plugin_metrics));
-    int ret = mf_CPU_perf_init(monitoring_data);
+    int ret = mf_CPU_perf_init(monitoring_data, conf_data->keys, conf_data->size);
     if(ret == 0) {
         printf("Error: Plugin init function failed. \n");
         return ret;

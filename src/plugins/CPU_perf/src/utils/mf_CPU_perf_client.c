@@ -53,7 +53,7 @@ int main(int argc, char** argv)
      * initialize the plugin
      */
     Plugin_metrics *monitoring_data = malloc(sizeof(Plugin_metrics));
-    int ret = mf_CPU_perf_init(monitoring_data);
+    int ret = mf_CPU_perf_init(monitoring_data, argv, argc);
     if(ret == 0) {
         printf("Error: Plugin init function failed.\n");
         exit(0);

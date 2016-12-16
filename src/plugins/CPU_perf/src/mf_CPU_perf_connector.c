@@ -36,6 +36,7 @@ long long before_time, after_time;
  * Forward Declarations
  ******************************************************************************/
 static int load_papi_library();
+int events_are_all_not_valid(char **events, size_t num_events);
 
 /** @brief Initializes the CPU_perf plugin
  *
@@ -44,8 +45,13 @@ static int load_papi_library();
  *
  *  @return 1 on success; 0 otherwise.
  */
-int mf_CPU_perf_init(Plugin_metrics *data)
+int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events)
 {
+	/* if all given events */
+	if (events_are_all_not_valid(events, num_events)) {
+		return FAILURE;
+	}
+
 	if (!load_papi_library()) {
         return FAILURE;
     }
@@ -183,4 +189,28 @@ static int load_papi_library()
     }
 
     return SUCCESS;
+}
+/** @brief Checks if all events are not valid
+ *
+ *  @return 1 when all events are not valid; 0 otherwise.
+ */
+int events_are_all_not_valid(char **events, size_t num_events) 
+{
+	int i, ii, counter;
+	counter = 0; 
+	for (i=0; i < num_events; i++) {
+		for (ii = 0; ii < PAPI_EVENTS_NUM; ii++) {
+			/* if events name matches, counter is incremented by 1 */
+			if(strcmp(events[i], CPU_perf_metrics[ii]) == 0) {
+				counter++;
+			}
+		}
+	}
+	if (counter == 0) {
+		printf("Wrong given metrics.\nPlease given metrics MFLIPS, MFLOPS, or MIPS\n");
+		return 1;
+	}
+	else {
+		return 0;
+	}
 }
