@@ -24,12 +24,26 @@
 #define FAILURE 0
 #define PAPI_EVENTS_NUM 3
 
+/*******************************************************************************
+ * Variable Declarations
+ ******************************************************************************/
 const int PAPI_EVENTS[PAPI_EVENTS_NUM] = {PAPI_FP_INS, PAPI_FP_OPS, PAPI_TOT_INS};
-const char CPU_perf_metrics[PAPI_EVENTS_NUM][16] = {"FLIPS", "FLOPS", "IPS"};
+const char CPU_perf_metrics[PAPI_EVENTS_NUM][16] = {"MFLIPS", "MFLOPS", "MIPS"};
 int EventSet = PAPI_NULL;
 long long before_time, after_time;
+
+/*******************************************************************************
+ * Forward Declarations
+ ******************************************************************************/
 static int load_papi_library();
 
+/** @brief Initializes the CPU_perf plugin
+ *
+ *  Load papi library at first; create a EventSet; add available events to the EventSet;
+ *  get the start timestamp; and start the counters specified in the generated EventSet.
+ *
+ *  @return 1 on success; 0 otherwise.
+ */
 int mf_CPU_perf_init(Plugin_metrics *data)
 {
 	if (!load_papi_library()) {
@@ -62,7 +76,10 @@ int mf_CPU_perf_init(Plugin_metrics *data)
 	return SUCCESS;
 }
 
-
+/** @brief Samples all possible events and stores data into the Plugin_metrics
+ *
+ *  @return 1 on success; 0 otherwise.
+ */
 int mf_CPU_perf_sample(Plugin_metrics *data)
 {
 	int ret, i;
@@ -90,6 +107,11 @@ int mf_CPU_perf_sample(Plugin_metrics *data)
 	return SUCCESS;
 }
 
+/** @brief Formats the sampling data into a json string
+ *
+ *  json string contains: plugin name, timestamps, metrics_name and metrics_value
+ *
+ */
 void mf_CPU_perf_to_json(Plugin_metrics *data, char **events, size_t num_events, char *json)
 {
 	struct timespec timestamp;
@@ -119,6 +141,11 @@ void mf_CPU_perf_to_json(Plugin_metrics *data, char **events, size_t num_events,
 	strcat(json, "}");
 }
 
+/** @brief Stops the plugin
+ *
+ *  This methods stops papi counters gracefully;
+ *
+ */
 void mf_CPU_perf_shutdown()
 {
 	int ret = PAPI_stop(EventSet, NULL);

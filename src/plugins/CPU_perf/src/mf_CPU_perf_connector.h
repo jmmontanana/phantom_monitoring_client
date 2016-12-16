@@ -21,21 +21,21 @@
 
 /** @brief Initializes the CPU_perf plugin
  *
- * @return 1 on success; 0 otherwise.
+ *  @return 1 on success; 0 otherwise.
  */
 int mf_CPU_perf_init(Plugin_metrics *data);
 
+
 /** @brief Samples all possible events and stores data into the Plugin_metrics
  *
- * @param data structure that holds all samples 
- *
- * @return 1 on success; 0 otherwise.
+ *  @return 1 on success; 0 otherwise.
  */
 int mf_CPU_perf_sample(Plugin_metrics *data);
 
+
 /** @brief Formats the sampling data into a json string
  *
- * json string contains: plugin name, timestamps, metrics_name and metrics_value
+ *  json string contains: plugin name, timestamps, metrics_name and metrics_value
  *
  */
 void mf_CPU_perf_to_json(Plugin_metrics *data, char **events, size_t num_events, char *json);
@@ -43,7 +43,7 @@ void mf_CPU_perf_to_json(Plugin_metrics *data, char **events, size_t num_events,
 
 /** @brief Stops the plugin
  *
- * This methods shuts down gracefully for sampling.
+ *  This methods shuts down gracefully for sampling.
  */
 void mf_CPU_perf_shutdown();
 
