@@ -27,7 +27,7 @@ typedef char* (*PluginHook)();
 /**
  * @brief definition of plugin manager struct
  */
-typedef struct PluginManager_t{
+typedef struct PluginManager_t {
 	EXCESS_concurrent_queue_t hook_queue;
 } PluginManager;
 

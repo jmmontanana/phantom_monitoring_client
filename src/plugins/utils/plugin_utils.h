@@ -21,18 +21,15 @@
 #define JSON_MAX_LEN 1024
 
 /** @brief data structure to store plugin metrics
- */
-typedef struct Plugin_metrics_t Plugin_metrics;
-
-/** @brief data structure to store plugin metrics
  *
  * The data structure holds the metric names including the correspond
  * measured values. Moreover, the number of events measured is stored.
  */
-struct Plugin_metrics_t
+typedef struct Plugin_metrics_t
 {
     char *events[MAX_EVENTS_NUMBER];
     float values[MAX_EVENTS_NUMBER];
     int num_events;
-};
+} Plugin_metrics;
+
 #endif /* _PLUGIN_UTILS_H */
