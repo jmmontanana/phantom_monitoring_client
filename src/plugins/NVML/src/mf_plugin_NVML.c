@@ -22,7 +22,7 @@
 #include <mf_parser.h> /* mfp_data */
 #include <plugin_utils.h> /* Plugin_metrics */
 
-#include "mf_CPU_perf_connector.h"
+#include "mf_NVML_connector.h"
 
 
 /*******************************************************************************
@@ -36,25 +36,25 @@ int is_initialized = 0;
 /*******************************************************************************
  * Forward Declarations
  ******************************************************************************/
-char* mf_plugin_CPU_perf_hook();
+char* mf_plugin_NVML_hook();
 
 /* Initialize the plugin; 
    register the plugin hook to the plugin manager 
    @return 1 on success; 0 otherwise */
 extern int
-init_mf_plugin_CPU_perf(PluginManager *pm)
+init_mf_plugin_NVML(PluginManager *pm)
 {
     /*
      * get the turned on metrics from the configuration file
      */
     conf_data =  malloc(sizeof(mfp_data));
-    mfp_get_data_filtered_by_value("mf_plugin_CPU_perf", conf_data, "on");
+    mfp_get_data_filtered_by_value("mf_plugin_NVML", conf_data, "on");
 
     /*
      * initialize the monitoring data
      */
     monitoring_data = malloc(sizeof(Plugin_metrics));
-    int ret = mf_CPU_perf_init(conf_data->keys, conf_data->size);
+    int ret = mf_NVML_init(monitoring_data, conf_data->keys, conf_data->size);
     if(ret == 0) {
         printf("Error: Plugin init function failed. \n");
         return ret;
@@ -62,27 +62,27 @@ init_mf_plugin_CPU_perf(PluginManager *pm)
     /*
      * if init succeed; register the plugin hook to the plugin manager
      */
-    PluginManager_register_hook(pm, "mf_plugin_CPU_perf", mf_plugin_CPU_perf_hook);
+    PluginManager_register_hook(pm, "mf_plugin_NVML", mf_plugin_NVML_hook);
     is_initialized = 1;
     return ret;
 }
 
 /* the hook function, sample the metrics and convert to a json-formatted string */
 char*
-mf_plugin_CPU_perf_hook()
+mf_plugin_NVML_hook()
 {
     if (is_initialized) {
         /*
          * sampling 
          */
-        mf_CPU_perf_sample(monitoring_data);
+        mf_NVML_sample(monitoring_data);
 
         /*
          * Prepares a json string, including current timestamp, name of the plugin,
          * and required metrics.
          */
         char *json = calloc(JSON_MAX_LEN, sizeof(char));
-        mf_CPU_perf_to_json(monitoring_data, conf_data->keys, conf_data->size, json);
+        mf_NVML_to_json(monitoring_data, conf_data->keys, conf_data->size, json);
 
         return json;
     } else {

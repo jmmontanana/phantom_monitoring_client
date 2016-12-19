@@ -35,19 +35,19 @@ long long before_time, after_time;
 /*******************************************************************************
  * Forward Declarations
  ******************************************************************************/
-static int load_papi_library();
 int events_are_all_not_valid(char **events, size_t num_events);
+static int load_papi_library();
 
 /** @brief Initializes the CPU_perf plugin
  *
- *  Load papi library at first; create a EventSet; add available events to the EventSet;
+ *  Load papi library; create a EventSet; add available events to the EventSet;
  *  get the start timestamp; and start the counters specified in the generated EventSet.
  *
  *  @return 1 on success; 0 otherwise.
  */
 int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events)
 {
-	/* if all given events */
+	/* if all given events are not valid, return directly */
 	if (events_are_all_not_valid(events, num_events)) {
 		return FAILURE;
 	}
