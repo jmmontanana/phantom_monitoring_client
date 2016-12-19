@@ -112,14 +112,13 @@ int mf_NVML_sample(Plugin_metrics *data)
 		else {
 			data->values[j] = -1.0;
 			data->values[j+1] = -1.0;
-
 		}
 
 		nvmlMemory_t mem_info;
     	ret = nvmlDeviceGetMemoryInfo(*devices[i], &mem_info);
     	if(ret == NVML_SUCCESS) {
 			/* the value is percent of allocated FB memory */
-			data->values[j+2] = (float) mem_info.used * 1.0 / mem_info.total;
+			data->values[j+2] = (float) mem_info.used * 100.0 / mem_info.total;
     	}
     	else {
     		data->values[j+2] = -1.0;
@@ -178,6 +177,7 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
 {
 	struct timespec timestamp;
     char tmp[128] = {'\0'};
+    char *sub_part;
     int i, ii;
     /*
      * prepares the json string, including current timestamp, and name of the plugin
@@ -194,7 +194,9 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
 	for (i = 0; i < num_events; i++) {
 		for(ii = 0; ii < data->num_events; ii++) {
 			/* if metrics' name matches, append the metrics to the json string */
-			if(strstr(data->events[ii], events[i]) != 0) {
+            sub_part = strstr(data->events[ii], ":");
+            sub_part ++;
+			if(strcmp(events[i], sub_part) == 0) {
 				sprintf(tmp, ",\"%s\":%f", data->events[ii], data->values[ii]);
 				strcat(json, tmp);
 			}
