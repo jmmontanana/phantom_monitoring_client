@@ -30,7 +30,7 @@
 unsigned int devices_count = 0;
 nvmlDevice_t **devices = NULL; 
 const char NVML_metrics[NVML_EVENTS_NUM][32] = {
-	"usage_rate", "mem_usage_rate", "mem_allocated",
+	"gpu_usage_rate", "mem_usage_rate", "mem_allocated",
 	"PCIe_snd_throughput", "PCIe_rcv_throughput",
 	"temperature", "power"
 };
@@ -74,6 +74,7 @@ int mf_NVML_init(Plugin_metrics *data, char **events, size_t num_events)
     		k++;
     	}
     }
+    data->num_events = k;
 
     /* get device handle for each GPU device */
     devices = calloc(devices_count, sizeof(nvmlDevice_t *));
@@ -103,10 +104,10 @@ int mf_NVML_sample(Plugin_metrics *data)
 		if(ret == NVML_SUCCESS) {
 			/* the value is percent of time over the past second,
 			 during which one or more kernels was executing on the GPU */
-			data->values[j] = (float) utilization.gpu / 100.0;
+			data->values[j] = (float) utilization.gpu * 1.0;
 			/* the value is percent of time over the past second,
 			 during which global (device) memory was being read or written */
-			data->values[j+1] = (float) utilization.memory / 100.0;
+			data->values[j+1] = (float) utilization.memory * 1.0;
 		}
 		else {
 			data->values[j] = -1.0;
@@ -164,7 +165,7 @@ int mf_NVML_sample(Plugin_metrics *data)
     	}
     	j = j + 6;
 	}
-	data->num_events = j;
+
 	return SUCCESS;
 }
 
@@ -193,7 +194,7 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
 	for (i = 0; i < num_events; i++) {
 		for(ii = 0; ii < data->num_events; ii++) {
 			/* if metrics' name matches, append the metrics to the json string */
-			if((strstr(data->events[ii], events[i]) == 0) && (data->values[ii] >= 0.0)) {
+			if(strstr(data->events[ii], events[i]) != 0) {
 				sprintf(tmp, ",\"%s\":%f", data->events[ii], data->values[ii]);
 				strcat(json, tmp);
 			}

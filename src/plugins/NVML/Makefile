@@ -7,7 +7,7 @@ COPT_SO = ${CFLAGS} -fpic
 CFLAGS = -std=gnu99 -pedantic -Wall -Wwrite-strings  -Wpointer-arith -Wcast-align -O0 -ggdb \
 -I${SRC} ${NVML_INC} ${PARSER_INC} ${UTILS_INC} ${AGENT_INC} ${EXCESS_QUEUE_INC}
 
-LFLAGS = -lrt -ldl -Wl,-rpath,${NVML_PATH} ${NVML_LIB}
+LFLAGS = -lrt -ldl ${NVML_LIB}
 
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
@@ -21,7 +21,7 @@ LIB = ${CURDIR}/lib
 
 NVML_PATH = ${CURDIR}/../../../bin/nvidia/usr
 NVML_INC = -I${NVML_PATH}/include/nvidia/gdk
-NVML_LIB = -L${NVML_PATH}/src/gdk/nvml/lib -lnvidia-ml
+NVML_LIB = -L/usr/lib64 -lnvidia-ml
 
 PARSER_INC = -I${CURDIR}/../../parser/src
 UTILS_INC = -I${CURDIR}/../utils
