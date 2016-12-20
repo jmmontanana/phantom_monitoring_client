@@ -21,6 +21,8 @@ LIB = ${CURDIR}/lib
 
 NVML_PATH = ${CURDIR}/../../../bin/nvidia/usr
 NVML_INC = -I${NVML_PATH}/include/nvidia/gdk
+# should use the libnvidia-ml.so, which is installed with the NVIDIA Display Driver.
+# by default the lib path is /usr/lib64 or /usr/lib
 NVML_LIB = -L/usr/lib64 -lnvidia-ml
 
 PARSER_INC = -I${CURDIR}/../../parser/src
