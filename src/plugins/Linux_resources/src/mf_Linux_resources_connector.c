@@ -21,7 +21,7 @@
 
 #define SUCCESS 1
 #define FAILURE 0
-#define RESOURCES_EVENTS_NUM 4
+#define RESOURCES_EVENTS_NUM 5
 
 #define CPU_STAT_FILE "/proc/stat"
 #define RAM_STAT_FILE "/proc/meminfo"
@@ -30,8 +30,10 @@
 
 #define HAS_CPU_STAT 0x01 
 #define HAS_RAM_STAT 0x02
-#define HAS_NET_STAT 0x04
-#define HAS_IO_STAT 0x08
+#define HAS_SWAP_STAT 0x04
+#define HAS_NET_STAT 0x08
+#define HAS_IO_STAT 0x10
+
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
@@ -39,7 +41,7 @@ unsigned int flag = 0;
 double before_time, after_time;
 
 const char Linux_resources_metrics[RESOURCES_EVENTS_NUM][32] = {
-	"CPU_usage_rate", "RAM_usage_rate", 
+	"CPU_usage_rate", "RAM_usage_rate", "swap_usage_rate", 
 	"net_throughput", "io_throughput" };
 
 
@@ -57,6 +59,7 @@ struct net_stats net_stat_after;
 int flag_init(char **events, size_t num_events);
 float CPU_usage_rate_read();
 float RAM_usage_rate_read();
+float swap_usage_rate_read();
 int NET_stat_read(struct net_stats *nets_info);
 
 /** @brief Initializes the Linux_resources plugin
@@ -88,6 +91,11 @@ int mf_Linux_resources_init(Plugin_metrics *data, char **events, size_t num_even
 	if(flag & HAS_RAM_STAT) {
 		data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
     	strcpy(data->events[i], "RAM_usage_rate");
+    	i++;
+	}
+	if(flag & HAS_SWAP_STAT) {
+		data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
+    	strcpy(data->events[i], "swap_usage_rate");
     	i++;
 	}
 	if(flag & HAS_NET_STAT) {
@@ -127,6 +135,10 @@ int mf_Linux_resources_sample(Plugin_metrics *data)
 	}
 	if(flag & HAS_RAM_STAT) {
 		data->values[i] = RAM_usage_rate_read();
+		i++;
+	}
+	if(flag & HAS_SWAP_STAT) {
+		data->values[i] = swap_usage_rate_read();
 		i++;
 	}
 	if(flag & HAS_NET_STAT) {
@@ -173,8 +185,8 @@ void mf_Linux_resources_to_json(Plugin_metrics *data, char *json)
      * filters the sampled data with respect to metrics values
      */
 	for (i = 0; i < data->num_events; i++) {
-		/* if metrics' value > 0.0, append the metrics to the json string */
-		if(data->values[i] > 0.0) {
+		/* if metrics' value >= 0.0, append the metrics to the json string */
+		if(data->values[i] >= 0.0) {
 			sprintf(tmp, ",\"%s\":%f", data->events[i], data->values[i]);
 			strcat(json, tmp);
 		}
@@ -278,6 +290,38 @@ float RAM_usage_rate_read() {
 	}
 	fclose(fp);
 	return RAM_usage_rate;
+}
+
+/* Gets swap usage rate (unit is %). 
+ * return the ram usgae rate on success; 0.0 otherwise
+ */
+float swap_usage_rate_read() {
+	FILE *fp;
+	char line[1024];
+	int SwapTotal = 0;
+	int SwapFree = 0;
+	float swap_usage_rate = 0.0;
+
+	fp = fopen(RAM_STAT_FILE, "r");
+	if(fp == NULL) {
+		printf("Error: Cannot open %s.\n", RAM_STAT_FILE);
+		return 0.0;
+	}
+
+	while(fgets(line, 1024, fp) != NULL) {
+		if (!strncmp(line, "SwapTotal:", 9)) {
+			sscanf(line + 9, "%d", &SwapTotal);
+		}
+		if (!strncmp(line, "SwapFree:", 8)) {
+			sscanf(line + 8, "%d", &SwapFree);
+		}
+		if ((SwapTotal * SwapFree) != 0) {
+			swap_usage_rate = (SwapTotal - SwapFree) * 100.0 / SwapTotal;
+			break;
+		}
+	}
+	fclose(fp);
+	return swap_usage_rate;
 }
 
 /* Gets current network stats (send and receive bytes). 
