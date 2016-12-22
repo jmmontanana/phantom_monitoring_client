@@ -20,6 +20,7 @@
 
 ROOT=`pwd`
 BINARY_FOLDER="bin"
+INSTALL_PATH_HWLOC=`pwd`/${BINARY_FOLDER}/hwloc
 INSTALL_PATH_PAPI=`pwd`/${BINARY_FOLDER}/papi
 INSTALL_PATH_APR=`pwd`/${BINARY_FOLDER}/apr
 INSTALL_PATH_APU=${INSTALL_PATH_APR}
@@ -45,6 +46,19 @@ APR_VERSION="1.5.2"
 APR_UTIL="apr-util"
 APR_UTIL_VERSION="1.5.4"
 EXCESS_QUEUE_VERSION=release/0.1.0
+
+
+# ============================================================================ #
+# DOWNLOAD AND INSTALL HWLOC                                                   #
+# ============================================================================ #
+
+cd $ROOT
+wget https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.2.tar.gz
+tar xf hwloc-1.11.2.tar.gz
+cd hwloc-1.11.2
+./configure --prefix=${INSTALL_PATH_HWLOC}
+make
+make install
 
 # ============================================================================ #
 # DOWNLOAD AND INSTALL PAPI-C                                                  #
@@ -208,6 +222,7 @@ git checkout $EXCESS_QUEUE_VERSION
 
 cd $ROOT
 rm -f *.tar.gz
+rm -rf hwloc-1.11.2
 rm -rf ${PAPI}-${PAPI_VERSION}
 rm -rf ${LIKWID}-${LIKWID_VERSION}
 rm -rf ${APR}-${APR_VERSION}
