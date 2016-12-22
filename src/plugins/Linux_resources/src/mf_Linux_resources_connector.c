@@ -17,6 +17,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <ctype.h>
+
 #include "mf_Linux_resources_connector.h"
 
 #define SUCCESS 1
@@ -26,7 +30,7 @@
 #define CPU_STAT_FILE "/proc/stat"
 #define RAM_STAT_FILE "/proc/meminfo"
 #define NET_STAT_FILE "/proc/net/dev"
-#define IO_STAT_FILE "/proc/%s/io"
+#define IO_STAT_FILE "/proc/%d/io"
 
 #define HAS_CPU_STAT 0x01 
 #define HAS_RAM_STAT 0x02
@@ -37,8 +41,11 @@
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
+
+/* flag indicates which events are given as input */
 unsigned int flag = 0;
-double before_time, after_time;
+/* time in seconds */
+double before_time, after_time; 
 
 const char Linux_resources_metrics[RESOURCES_EVENTS_NUM][32] = {
 	"CPU_usage_rate", "RAM_usage_rate", "swap_usage_rate", 
@@ -49,9 +56,15 @@ struct net_stats {
 	unsigned long long rcv_bytes;
 	unsigned long long send_bytes;
 };
-
 struct net_stats net_stat_before;
 struct net_stats net_stat_after;
+
+struct io_stats {
+	unsigned long long read_bytes;
+	unsigned long long write_bytes;	
+};
+struct io_stats io_stat_before;
+struct io_stats io_stat_after;
 
 /*******************************************************************************
  * Forward Declarations
@@ -61,6 +74,8 @@ float CPU_usage_rate_read();
 float RAM_usage_rate_read();
 float swap_usage_rate_read();
 int NET_stat_read(struct net_stats *nets_info);
+int sys_IO_stat_read(struct io_stats *total_io_stat);
+int process_IO_stat_read(int pid, struct io_stats *io_info);
 
 /** @brief Initializes the Linux_resources plugin
  *
@@ -109,7 +124,7 @@ int mf_Linux_resources_init(Plugin_metrics *data, char **events, size_t num_even
 		data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
     	strcpy(data->events[i], "io_throughput");
     	/* read the current io read/write bytes for all processes */
-    	/* ... */
+    	sys_IO_stat_read(&io_stat_before);
     	i++;
 	}
 	data->num_events = i;
@@ -153,8 +168,15 @@ int mf_Linux_resources_sample(Plugin_metrics *data)
 		net_stat_before.send_bytes = net_stat_after.send_bytes;
 	}
 	if(flag & HAS_IO_STAT) {
-		data->values[i] = -1.0;
+		sys_IO_stat_read(&io_stat_after);
+		unsigned long long total_bytes = (io_stat_after.read_bytes - io_stat_before.read_bytes)
+			+ (io_stat_after.write_bytes - io_stat_before.write_bytes);
+		data->values[i] = (float) (total_bytes * 1.0 / time_interval);
 		i++;
+
+		/* update the io_stat_before values by the current values */
+		io_stat_before.read_bytes = io_stat_after.read_bytes;
+		io_stat_before.write_bytes = io_stat_after.write_bytes;
 	}
 
 	/* update timestamp */
@@ -169,16 +191,13 @@ int mf_Linux_resources_sample(Plugin_metrics *data)
  */
 void mf_Linux_resources_to_json(Plugin_metrics *data, char *json)
 {
-	struct timespec timestamp;
     char tmp[128] = {'\0'};
     int i;
     /*
      * prepares the json string, including current timestamp, and name of the plugin
      */
-    sprintf(json, "{\"plugin\":\"CPU_FF_perf\"");
-    clock_gettime(CLOCK_REALTIME, &timestamp);
-    double ts = timestamp.tv_sec + (double)(timestamp.tv_nsec / 1.0e9);
-    sprintf(tmp, ",\"@timestamp\":\"%f\"", ts);
+    sprintf(json, "{\"plugin\":\"Linux_resources\"");
+    sprintf(tmp, ",\"@timestamp\":\"%f\"", after_time);
     strcat(json, tmp);
 
     /*
@@ -360,6 +379,81 @@ int NET_stat_read(struct net_stats *nets_info) {
 
 			nets_info->rcv_bytes += temp_rcv_bytes;
 			nets_info->send_bytes += temp_send_bytes;
+		}
+	}
+	fclose(fp);
+	return 1;
+}
+
+/* Gets the IO stats of the whole system.
+ * read IO stats for all processes and make an addition  
+ * return 1 on success; 0 otherwise
+ */
+int sys_IO_stat_read(struct io_stats *total_io_stat) {
+	DIR *dir;
+	struct dirent *drp;
+	int pid;
+
+	/* open /proc directory */
+	dir = opendir("/proc");
+	if (dir == NULL) {
+		printf("Error: Cannot open /proc.\n");
+		return 0;
+	}
+
+	/* declare data structure which stores the io stattistics of each process */
+	struct io_stats pid_io_stat;
+
+	/* reset total_io_stat into zeros */
+	total_io_stat->read_bytes = 0;
+	total_io_stat->write_bytes = 0;
+
+	/* get the entries in the /proc directory */
+	drp = readdir(dir);
+	while (drp != NULL) {
+		/* if entry's name starts with digit,
+		   get the process pid and read the IO stats of the process */
+		if (isdigit(drp->d_name[0])) {
+			pid = atoi(drp->d_name);
+			if (process_IO_stat_read(pid, &pid_io_stat)) {
+				total_io_stat->read_bytes += pid_io_stat.read_bytes;
+				total_io_stat->write_bytes += pid_io_stat.write_bytes;
+			}
+		}
+		/* read the next entry in the /proc directory */
+		drp = readdir(dir);
+	}
+
+	/* close /proc directory */
+	closedir(dir);
+	return 1; 
+}
+
+/* Gets the IO stats of a specified process. 
+ * parameters are pid and io_info
+ * return 1 on success; 0 otherwise
+ */
+int process_IO_stat_read(int pid, struct io_stats *io_info) {
+	FILE *fp;
+	char filename[128], line[256];
+
+	sprintf(filename, IO_STAT_FILE, pid);
+	if ((fp = fopen(filename, "r")) == NULL) {
+		printf("Error: Cannot open %s.\n", filename);
+		return 0;
+	}
+	io_info->read_bytes = 0;
+	io_info->write_bytes = 0;
+
+	while (fgets(line, 256, fp) != NULL) {
+		if (!strncmp(line, "read_bytes:", 11)) {
+			sscanf(line + 12, "%llu", &io_info->read_bytes);
+		}
+		if (!strncmp(line, "write_bytes:", 12)) {
+			sscanf(line + 13, "%llu", &io_info->write_bytes);
+		}
+		if ((io_info->read_bytes * io_info->write_bytes) != 0) {
+			break;
 		}
 	}
 	fclose(fp);
