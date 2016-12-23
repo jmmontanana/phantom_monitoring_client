@@ -78,6 +78,7 @@ int EventSet = PAPI_NULL;
 int num_sockets = 0;
 double denominator = 1.0 ; /*according to different CPU models, DRAM energy scalings are different */
 int rapl_is_available = 0;
+float ecpu_before, emem_before, ecpu_after, emem_after;
 
 struct net_stats {
 	unsigned long long rcv_bytes;
@@ -135,6 +136,9 @@ int mf_Linux_sys_power_init(Plugin_metrics *data, char **events, size_t num_even
     	/* initialize RAPL counters for CPU and DRAM energy measurement;
     	   create eventsets */
     	rapl_is_available = rapl_init();
+    	if(rapl_is_available) {
+    		rapl_stat_read(&ecpu_before, &emem_before);
+    	}
 
     	/* read the current network rcv/send bytes */
     	NET_stat_read(&net_stat_before);
@@ -173,6 +177,9 @@ int mf_Linux_sys_power_init(Plugin_metrics *data, char **events, size_t num_even
     		i++;
     		/* initialize RAPL counters if available */
 			rapl_is_available = rapl_init();
+			if(rapl_is_available) {
+    			rapl_stat_read(&ecpu_before, &emem_before);
+    		}
 		}
 		if(flag & HAS_NET_STAT) {
 			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
@@ -219,8 +226,12 @@ int mf_Linux_sys_power_sample(Plugin_metrics *data)
 	if(flag & HAS_ALL) {
 		/* get CPU and DRAM energy by rapl read (unit in milliJoule) */
 		if(rapl_is_available) {
-			rapl_stat_read(&ecpu, &emem);	
+			rapl_stat_read(&ecpu_after, &emem_after);	
 		}
+		ecpu = ecpu_after - ecpu_before;
+		emem = emem_after - emem_before;
+		ecpu_before = ecpu_after;
+		emem_before = emem_after;
 		
 		/* get net energy (unit in milliJoule) */
 		NET_stat_read(&net_stat_after);
@@ -253,8 +264,13 @@ int mf_Linux_sys_power_sample(Plugin_metrics *data)
 		if((flag & HAS_CPU_STAT) || (flag & HAS_RAM_STAT)) {
 			/* get CPU and DRAM energy by rapl read (unit in milliJoule) */
 			if(rapl_is_available) {
-				rapl_stat_read(&ecpu, &emem);	
+				rapl_stat_read(&ecpu_after, &emem_after);	
 			}
+			ecpu = ecpu_after - ecpu_before;
+			emem = emem_after - emem_before;
+			ecpu_before = ecpu_after;
+			emem_before = emem_after;
+
 			data->values[i] = ecpu / time_interval;
 			i++;
 			data->values[i] = emem / time_interval;
