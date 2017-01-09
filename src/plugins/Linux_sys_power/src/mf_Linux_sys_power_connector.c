@@ -366,7 +366,7 @@ int flag_init(char **events, size_t num_events)
 	}
 }
 
-/* Gets current network stats (send and receive bytes). 
+/* Gets current network stats (send and receive bytes via wireless card). 
  * return 1 on success; 0 otherwise
  */
 int NET_stat_read(struct net_stats *nets_info) {
@@ -385,15 +385,6 @@ int NET_stat_read(struct net_stats *nets_info) {
 	nets_info->send_bytes = 0;
 
 	while(fgets(line, 1024, fp) != NULL) {
-		char *sub_line_eth = strstr(line, "eth");
-		if (sub_line_eth != NULL) {
-			sscanf(sub_line_eth + 5, "%llu%u%u%u%u%u%u%u%llu", 
-				&temp_rcv_bytes, &temp, &temp, &temp, &temp, &temp, &temp, &temp,
-				&temp_send_bytes);
-
-			nets_info->rcv_bytes += temp_rcv_bytes;
-			nets_info->send_bytes += temp_send_bytes;
-		}
 		char *sub_line_wlan = strstr(line, "wlan");
 		if (sub_line_wlan != NULL) {
 			sscanf(sub_line_wlan + 6, "%llu%u%u%u%u%u%u%u%llu", 
