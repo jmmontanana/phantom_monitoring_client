@@ -58,12 +58,12 @@ Replace **<LIST_OF_Board_power_METRICS>** with a space-separated list of the fol
 
 Unit and description for each metric is showed in the following table:
 
-| Metrics    | Units    | Description   |
-|----------- |--------  |-------------  |
-| device0:current | mA | current go throught the Jack probe |
-| device0:vshunt  | mV | voltage over the shunt |
-| device0:vbus    | mV | voltage over the bus |
-| device0:power   | mW | power measured for the target board |
+| Metrics         | Units  | Description   |
+|---------------- |------  |-------------  |
+| device0:current | mA     | current measured for the target board |
+| device0:vshunt  | mV     | shunt voltage drop |
+| device0:vbus    | mV     | bus supply voltage |
+| device0:power   | mW     | power measured for the target board |
 
 
 |------------------------------------------------------------------ |
