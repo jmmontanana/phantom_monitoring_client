@@ -261,19 +261,19 @@ static void init_ina2xx_channels(struct iio_device *dev, int device_idx)
 			my_chn[device_idx][i].scale = 1.0;
 
 		if (!strncmp(id, "power", 5)) {
-			sprintf(my_chn[device_idx][i].label,"iio:device%d:power",device_idx);
+			sprintf(my_chn[device_idx][i].label,"device%d:power",device_idx);
 			strcpy(my_chn[device_idx][i].unit, "mW");
 
 		} else if (!strncmp(id, "current", 6)) {
-			sprintf(my_chn[device_idx][i].label,"iio:device%d:current",device_idx);
+			sprintf(my_chn[device_idx][i].label,"device%d:current",device_idx);
 			strcpy(my_chn[device_idx][i].unit, "mA");
 
 		} else if (!strncmp(id, "voltage1", 8)) {
-			sprintf(my_chn[device_idx][i].label,"iio:device%d:vbus",device_idx);
+			sprintf(my_chn[device_idx][i].label,"device%d:vbus",device_idx);
 			strcpy(my_chn[device_idx][i].unit, "mV");
 
 		} else if (!strncmp(id, "voltage0", 8)) {
-			sprintf(my_chn[device_idx][i].label,"iio:device%d:vshunt",device_idx);
+			sprintf(my_chn[device_idx][i].label,"device%d:vshunt",device_idx);
 			strcpy(my_chn[device_idx][i].unit, "mV");
 
 		}
