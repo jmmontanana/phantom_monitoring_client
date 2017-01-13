@@ -21,7 +21,49 @@ More details about each plugin, for example, the plugins' usage, prerequisites a
 |------------------------------------------------------------------ |
 ## Board_power Plugin
 
+This plugin is based on the external ACME power measurement kit and the libiio library, which is installed during the monitoring client setup process, done automatically by the setup.sh shell script. In case that the ACME power measurement board is not connected with the monitoring client hosted computer or the libiio library is not found, the plugin will fail and report associated error messages.
+
+It is recommended to try the following command to test the ACME power measurement board connection:
+
+```
+$ ping baylibre-acme.local
+```
+
 ### Usage and metrics
+
+The Board_power plugin can be built and ran alone, outside the monitoring framework. In the directory of the plugin, execute the **Makefile** using
+
+```
+$ make clean all
+```
+
+, before calling the generated sampling client **mf_Board_power_client**, please add the required libraries to the **LD_LIBRARY_PATH** by:
+
+```
+$ source setenv.sh
+```
+
+It is advised to run the sampling client **mf_Board_power_client** like the follows:
+
+```
+$ ./mf_Board_power_client <LIST_OF_Board_power_METRICS>
+```
+
+Replace **<LIST_OF_Board_power_METRICS>** with a space-separated list of the following events:
+
+- device0:current
+- device0:vshunt
+- device0:vbus
+- device0:power
+
+Unit and description for each metric is showed in the following table:
+
+| Metrics    | Units    | Description   |
+|----------- |--------  |-------------  |
+| device0:current | mA | current go throught the Jack probe |
+| device0:vshunt  | mV | voltage over the shunt |
+| device0:vbus    | mV | voltage over the bus |
+| device0:power   | mW | power measured for the target board |
 
 
 |------------------------------------------------------------------ |
@@ -37,7 +79,7 @@ The CPU_perf plugin can be built and ran alone, outside the monitoring framework
 $ make all
 ```
 
-, before calling the generated sampling client **mf_CPU_perf_client**, please add the required libraries to the ** LD_LIBRARY_PATH** by:
+, before calling the generated sampling client **mf_CPU_perf_client**, please add the required libraries to the **LD_LIBRARY_PATH** by:
 
 ```
 $ source setenv.sh
@@ -77,7 +119,7 @@ The CPU_temperature plugin can be built and ran alone, outside the monitoring fr
 $ make all
 ```
 
-, before calling the generated sampling client **mf_CPU_temperature_client**, please add the required libraries to the ** LD_LIBRARY_PATH** by:
+, before calling the generated sampling client **mf_CPU_temperature_client**, please add the required libraries to the **LD_LIBRARY_PATH** by:
 
 ```
 $ source setenv.sh
@@ -86,7 +128,7 @@ $ source setenv.sh
 It is advised to run the sampling client **mf_CPU_temperature_client** like the follows:
 
 ```
-$ ./mf_CPU_perf_client <LIST_OF_CPU_temperature_METRICS>
+$ ./mf_CPU_temperature_client <LIST_OF_CPU_temperature_METRICS>
 ```
 
 Replace **<LIST_OF_CPU_temperature_METRICS>** with a space-separated list of the following events:
@@ -153,7 +195,7 @@ The Linux_sys_power plugin can be built and ran alone, outside the monitoring fr
 $ make all
 ```
 
-, before calling the generated sampling client **mf_Linux_sys_power_client**, please add the required libraries to the ** LD_LIBRARY_PATH** by:
+, before calling the generated sampling client **mf_Linux_sys_power_client**, please add the required libraries to the **LD_LIBRARY_PATH** by:
 
 ```
 $ source setenv.sh
