@@ -196,7 +196,7 @@ void mf_Linux_resources_to_json(Plugin_metrics *data, char *json)
     /*
      * prepares the json string, including current timestamp, and name of the plugin
      */
-    sprintf(json, "{\"plugin\":\"Linux_resources\"");
+    sprintf(json, "\"plugin\":\"Linux_resources\"");
     sprintf(tmp, ",\"@timestamp\":\"%f\"", after_time);
     strcat(json, tmp);
 
@@ -210,8 +210,6 @@ void mf_Linux_resources_to_json(Plugin_metrics *data, char *json)
 			strcat(json, tmp);
 		}
 	}
-
-	strcat(json, "}");
 }
 
 

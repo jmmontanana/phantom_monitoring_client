@@ -7,9 +7,9 @@ CFLAGS = -std=gnu99 -pedantic -Wall -Wwrite-strings -Wpointer-arith \
 
 LFLAGS =  -lm $(APR)
 
-COMMON = ${CURDIR}/../..
+COMMON = ${CURDIR}/..
 CORE_INC = -I$(COMMON)/core
-BINARIES = ${CURDIR}/../../../bin
+BINARIES = ${CURDIR}/../../bin
 APR_CONFIG = $(BINARIES)/apr/bin/apr-1-config
 APU_CONFIG = $(BINARIES)/apr/bin/apu-1-config
 APR = $(shell $(APR_CONFIG) --link-ld) $(shell $(APU_CONFIG) --link-ld)
@@ -22,7 +22,7 @@ else
 	CFLAGS += -DNDEBUG
 endif
 
-all: clean-all libparser.so libparser.a
+all: clean libparser.so libparser.a
 
 mf_parser.o:
 	$(CC) -c src/mf_parser.c libs/ini/ini.c $(COPT_SO) $(LFLAGS)
@@ -37,10 +37,4 @@ libparser.a: mf_parser.o ini.o
 	ar rcs $@ $^
 
 clean:
-	rm -rf *.o
-
-clean-all:
 	rm -rf *.o *.a *.so
-
-doc: $(FILES)
-	doxygen Doxyfile

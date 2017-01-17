@@ -182,7 +182,7 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
     /*
      * prepares the json string, including current timestamp, and name of the plugin
      */
-    sprintf(json, "{\"plugin\":\"NVML\"");
+    sprintf(json, "\"plugin\":\"NVML\"");
     clock_gettime(CLOCK_REALTIME, &timestamp);
     double ts = timestamp.tv_sec + (double)(timestamp.tv_nsec / 1.0e9);
     sprintf(tmp, ",\"@timestamp\":\"%f\"", ts);
@@ -202,7 +202,6 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
 			}
 		}
 	}
-	strcat(json, "}");
 }
 
 /** @brief Stops the plugin

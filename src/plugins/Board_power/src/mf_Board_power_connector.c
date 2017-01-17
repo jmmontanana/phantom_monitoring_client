@@ -118,7 +118,7 @@ void mf_Board_power_to_json(Plugin_metrics *data, char **events, size_t num_even
     /*
      * prepares the json string, including current timestamp, and name of the plugin
      */
-    sprintf(json, "{\"plugin\":\"Board_power\"");
+    sprintf(json, "\"plugin\":\"Board_power\"");
     clock_gettime(CLOCK_REALTIME, &timestamp);
     double ts = timestamp.tv_sec + (double)(timestamp.tv_nsec / 1.0e9);
     sprintf(tmp, ",\"@timestamp\":\"%f\"", ts);
@@ -136,7 +136,6 @@ void mf_Board_power_to_json(Plugin_metrics *data, char **events, size_t num_even
 			}
 		}
 	}
-	strcat(json, "}");
 }
 
 

@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "plugin_discover.h"
+#include "mf_parser.h"  //mfp_get_value()
 
 /*******************************************************************************
  * Variable Declarations

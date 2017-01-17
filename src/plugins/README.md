@@ -3,7 +3,7 @@
 |------------------------------------------------------------------ |
 ## Introduction
 
-The monitoring client is composed of 8 plugins, monitoring all kinds of the system infrastructure-level performance and power metrics. The plugins implemented are based on various libraries, system hardware counters and Linux proc filesystem. In addition to be used by the monitoring client, each plugin can be built as a standalone client, being executed alone with given specific metrics name. 
+The monitoring client is composed of 6 plugins, monitoring all kinds of the system infrastructure-level performance and power metrics. The plugins implemented are based on various libraries, system hardware counters and Linux proc filesystem. In addition to be used by the monitoring client, each plugin can be built as a standalone client, being executed alone with given specific metrics name. 
 
 More details about each plugin, for example, the plugins' usage, prerequisites and supported metrics are all clarified in the following.
 
@@ -12,10 +12,8 @@ More details about each plugin, for example, the plugins' usage, prerequisites a
 - Board_power
 - CPU_perf
 - CPU_temperature
-- FPGA_IO
 - Linux_resources
 - Linux_sys_power
-- Movidius_power
 - NVML
 
 |------------------------------------------------------------------ |
@@ -139,12 +137,6 @@ Replace **<LIST_OF_CPU_temperature_METRICS>** with a space-separated list of the
 
 
 |------------------------------------------------------------------ |
-## FPGA_IO Plugin
-
-### Usage and metrics
-
-
-|------------------------------------------------------------------ |
 ## Linux_resources Plugin
 
 This plugin is based on the Linux proc filesystem which provides information and statistics about processes and system.
@@ -224,12 +216,6 @@ Unit and description for each metric is showed in the following table:
 | power_net    | milliwatts | wireless network power, which is calcuated with given variables (E_NET_SND_PER_KB, E_NET_RCV_PER_KB) and monitored send and receive bytes via the wireless card |
 | power_disk   | milliwatts | disk power, which is calcuated with given variables (E_DISK_R_PER_KB, E_DISK_W_PER_KB) and monitored read and write bytes via disk |
 | power_total  | milliwatts | total system power, calculated by the addition of the abover metrics |
-
-
-|------------------------------------------------------------------ |
-## Movidius_power Plugin
-
-### Usage and metrics
 
 
 |------------------------------------------------------------------ |

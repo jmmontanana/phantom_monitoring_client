@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <excess_concurrent_queue.h>
 #include "plugin_manager.h"
 
@@ -56,7 +57,7 @@ PluginHook PluginManager_get_hook(PluginManager *pm) {
 		PluginHookType *typePtr;
 		typePtr = (struct PluginHookType_t *) retPtr;
 		funcPtr = *(typePtr->hook);
-		printf("Using plugin: %s", typePtr->name);	
+		printf("Using plugin: %s\n", typePtr->name);	
 	}
 
 	ECQ_free_handle(hook_queue_handle);
