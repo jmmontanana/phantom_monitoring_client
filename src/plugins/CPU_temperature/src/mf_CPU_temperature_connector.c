@@ -81,7 +81,7 @@ int mf_CPU_temperature_init(Plugin_metrics *data, char **events, size_t num_even
             if (prefix("Physical id", label) != 0) {
                 continue;
             }
-            strncpy(chipnum, label+sizeof(label)+4, sizeof(char));
+            strncpy(chipnum, label+12, strlen(label)-12);
         }
 
         /* create sensors features according to given events */
@@ -105,11 +105,11 @@ int mf_CPU_temperature_init(Plugin_metrics *data, char **events, size_t num_even
                     continue;
                 }
                 char corenum[3] = {'\0'};
-                strncpy(corenum, label+5, sizeof(char));
+                strncpy(corenum, label+5, strlen(label)-5);
 
                 /* get my_label with acquired chipnum and corenum */
                 char my_label[16] = {'\0'};
-                sprintf(my_label, "CPU%c:core%c", chipnum[0], corenum[0]);
+                sprintf(my_label, "CPU%s:core%s", chipnum, corenum);
                 
                 /* use flag to mark if my_label can be found in the given events */
                 int i, flag = 0;

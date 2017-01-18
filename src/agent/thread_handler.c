@@ -27,7 +27,7 @@
 #include "plugin_discover.h" // variables like pluginCount, plugins_name; 
                              // functions like discover_plugins(), cleanup_plugins()
 #include "mf_parser.h" // functions like mfp_parse(), ...
-#include <excess_concurrent_queue.h> // functions like ECQ_create(), ECQ_free()
+#include "publisher.h" // function like publish_json()
 
 #define MIN_THREADS 1
 #define BULK_SIZE 4
@@ -40,7 +40,6 @@
  ******************************************************************************/
 int running;
 static PluginManager *pm;
-EXCESS_concurrent_queue_t data_queue;
 pthread_t threads[256];
 long timings[256];
 
@@ -78,9 +77,6 @@ int startThreads(void) {
 	int iret[num_threads];
 	int nums[num_threads];
 
-	/* create the data metrics queue */
-	data_queue = ECQ_create(0);
-
 	for (t = 0; t < num_threads; t++) {
 		nums[t] = t;
 		iret[t] = pthread_create(&threads[t], NULL, entryThreads, &nums[t]);
@@ -106,9 +102,7 @@ int startThreads(void) {
 	}
 
 	cleanup_plugins(pdstate);
-	//shutdown_curl();
 	PluginManager_free(pm);
-	ECQ_free(data_queue);
 	free(pluginLocation);
 	return 1;
 }
@@ -160,16 +154,13 @@ int gatherMetric(int num)
 	PluginHook hook = PluginManager_get_hook(pm);
 	printf("gather metric %s (#%d) with update interval of %ld ns\n", current_plugin_name, (num- MIN_THREADS), timings[num - MIN_THREADS]);
 
-	EXCESS_concurrent_queue_handle_t data_queue_handle;
-	data_queue_handle =ECQ_get_handle(data_queue);
-
 	char json_array[JSON_LEN * BULK_SIZE] = {'\0'};
 	json_array[0] = '[';
 	char msg[JSON_LEN] = {'\0'};
 	char static_json[512] = {'\0'};
 
-	sprintf(static_json, "{\"application_id\":\"%s\",\"experiment_id\":\"%s\",\"component_id\":\"%s\",", 
-		application_id, experiment_id, component_id);
+	sprintf(static_json, "{\"WorkflowID\":\"%s\",\"ExperimentID\":\"%s\",\"TaskID\":\"%s\",\"host\":\"%s\",", 
+		application_id, experiment_id, component_id, platform_id);
 
 	while (running) {
 
@@ -186,12 +177,11 @@ int gatherMetric(int num)
 		json_array[strlen(json_array) -1] = ']';
 		json_array[strlen(json_array)] = '\0';
 		puts(json_array);
+		publish_json(metrics_publish_URL, json_array);
 		memset(json_array, '\0', JSON_LEN * BULK_SIZE * sizeof(char));
 		json_array[0] = '[';
-		//ECQ_enqueue(data_queue_handle, m_ptr);
+		
 	}
-	/* call when terminating program, enables cleanup of plug-ins */
-	ECQ_free_handle(data_queue_handle);
 	
 	hook();
 	return SUCCESS;

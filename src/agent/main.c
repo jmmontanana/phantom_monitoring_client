@@ -28,7 +28,6 @@
 #define DEFAULT_APP "monitoring_test"
 #define DEFAULT_EXP "12345678"
 #define DEFAULT_COMP "comp_1"
-#define DEFAULT_VERSION "v2"
 
 #define SUCCESS 1
 #define FAILURE 0
@@ -41,7 +40,9 @@ char *confFile;
 char *application_id;
 char *experiment_id;
 char *component_id;
-char *api_version;
+
+char *metrics_publish_URL;
+char *platform_id;
 
 /*******************************************************************************
  * Variable Declarations
@@ -64,7 +65,7 @@ int main(int argc, char* argv[]) {
 	int application_flag = 0; //arg "application_id" exists flag
 	int experiment_flag = 0;	//arg "experiment_id" exists flag
 	int component_flag = 0;	//arg "component_id" exists flag
-	int version_flag = 0;	//arg "api_version" exists flag
+
 	int err = 0, help = 0;
 	
 	/* init arguments */
@@ -73,7 +74,6 @@ int main(int argc, char* argv[]) {
 	application_id = calloc(128, sizeof(char));
 	experiment_id = calloc(128, sizeof(char));
 	component_id = calloc(128, sizeof(char));
-	api_version = calloc(32, sizeof(char));
 
 	confFile = calloc(256, sizeof(char));
 
@@ -86,8 +86,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	/* parse command-line arguments */
-	static char usage[] = "usage: %s [-a application_id] [-e experiment_id] [-c component_id] [-v api_version] [-h help]\n";
-	while ((c = getopt(argc, argv, "a:e:c:v:h")) != -1)
+	static char usage[] = "usage: %s [-a application_id] [-e experiment_id] [-c component_id] [-h help]\n";
+	while ((c = getopt(argc, argv, "a:e:c:h")) != -1)
 		switch (c) {
 		case 'a':
 			strcpy(application_id, optarg);
@@ -103,11 +103,6 @@ int main(int argc, char* argv[]) {
 			strcpy(component_id, optarg);
 			component_flag = 1;
 			printf("> component_id : %s\n", component_id);
-			break;
-		case 'v':
-			strcpy(api_version, optarg);
-			version_flag = 1;
-			printf("> api_version : %s\n", api_version);
 			break;
 		case 'h':
 			help = 1;
@@ -129,9 +124,6 @@ int main(int argc, char* argv[]) {
 	}
 	if(component_flag == 0) {
 		strcpy(component_id, DEFAULT_COMP);
-	}
-	if(version_flag == 0) {
-		strcpy(api_version, DEFAULT_VERSION);
 	}
 	
 	/* set the configuration file */
@@ -165,7 +157,8 @@ int main(int argc, char* argv[]) {
 	free(application_id);
 	free(experiment_id);
 	free(component_id);
-	free(api_version);
+	free(metrics_publish_URL);
+	free(platform_id);
 
 	free(confFile);
 	mfp_parse_clean();
@@ -217,7 +210,20 @@ int writeTmpPID(void)
 	return SUCCESS;
 }
 
+/* prepare metrics_publish_URL and platform_id, based on mf_config.ini*/
 int prepare(void)
 {
+	char server_name[128] = {'\0'};
+	
+	metrics_publish_URL = calloc(256, sizeof(char));
+	platform_id = calloc(128, sizeof(char));
+	/* get server */
+	mfp_get_value("generic", "server", server_name);
+	/* get metrics send url */
+	sprintf(metrics_publish_URL, "%s/dreamcloud/mf/metrics", server_name);
+
+	/* get platform_id */
+	mfp_get_value("generic", "platform_id", platform_id);
+
 	return SUCCESS;
 }

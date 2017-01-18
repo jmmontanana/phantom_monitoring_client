@@ -13,6 +13,8 @@ extern char *experiment_id;
 
 extern char *component_id;
 
-extern char *api_version;
+extern char *metrics_publish_URL;
+
+extern char *platform_id;
 
 #endif /* MAIN_H */

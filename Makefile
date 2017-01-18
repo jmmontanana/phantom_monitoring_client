@@ -40,8 +40,8 @@ APR_INC = $(shell $(APR_CONFIG) --includes) $(shell $(APR_CONFIG) --includes)
 PARSER = -L$(PWD)/src/parser/ -lparser
 PARSER_INC = -I$(PWD)/src/parser/src
 
-PUBLISHER =
-PUBLISHER_INC = 
+PUBLISHER = -L$(PWD)/src/publisher/ -lpublisher
+PUBLISHER_INC = -I$(PWD)/src/publisher/src
 
 CORE_INC = -I$(PWD)/src/core
 
@@ -77,6 +77,7 @@ excess_concurrent_queue.o:
 
 prepare:
 	$(MAKE) -C $(PWD)/src/parser
+	$(MAKE) -C $(PWD)/src/publisher
 
 main: excess_concurrent_queue.o $(SRC)/main.o $(SRC)/thread_handler.o $(SRC)/plugin_discover.o $(SRC)/plugin_manager.o
 	$(CXX) -o $@ $^ -lrt -ldl -Wl,--export-dynamic $(CFLAGS) $(LFLAGS)
@@ -101,6 +102,7 @@ clean:
 	rm -rf $(PWD)/ext/queue/*.o
 	rm -f $(PWD)/main
 	$(MAKE) -C $(PWD)/src/parser clean
+	$(MAKE) -C $(PWD)/src/publisher clean
 	$(MAKE) -C $(PLUGIN_DIR)/Board_power clean
 	$(MAKE) -C $(PLUGIN_DIR)/CPU_perf clean
 	$(MAKE) -C $(PLUGIN_DIR)/CPU_temperature clean
@@ -143,3 +145,4 @@ copy_libs:
 	cp -f $(PWD)/bin/papi/lib/lib*.so* $(INSTALL_LIB_DIR)
 	cp -f $(PWD)/bin/sensors/lib/lib*.so* $(INSTALL_LIB_DIR)
 	cp -f $(PWD)/src/parser/lib*.so* $(INSTALL_LIB_DIR)
+	cp -f $(PWD)/src/publisher/lib*.so* $(INSTALL_LIB_DIR)
