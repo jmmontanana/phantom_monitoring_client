@@ -231,11 +231,11 @@ int flag_init(char **events, size_t num_events)
 		}
 	}
 	if (flag == 0) {
-		printf("Wrong given metrics.\nPlease given metrics ");
+		fprintf(stderr, "Wrong given metrics.\nPlease given metrics ");
 		for (ii = 0; ii < RESOURCES_EVENTS_NUM; ii++) {
-			printf("%s ", Linux_resources_metrics[ii]);
+			fprintf(stderr, "%s ", Linux_resources_metrics[ii]);
 		}
-		printf("\n");
+		fprintf(stderr, "\n");
 		return FAILURE;
 	}
 	else {
@@ -254,7 +254,7 @@ float CPU_usage_rate_read() {
 
 	fp = fopen(CPU_STAT_FILE, "r");
 	if(fp == NULL) {
-		printf("Error: Cannot open %s.\n", CPU_STAT_FILE);
+		fprintf(stderr, "Error: Cannot open %s.\n", CPU_STAT_FILE);
 		return 0.0;
 	}
 	if (fgets(line, 1024, fp) != NULL) {
@@ -289,7 +289,7 @@ float RAM_usage_rate_read() {
 
 	fp = fopen(RAM_STAT_FILE, "r");
 	if(fp == NULL) {
-		printf("Error: Cannot open %s.\n", RAM_STAT_FILE);
+		fprintf(stderr, "Error: Cannot open %s.\n", RAM_STAT_FILE);
 		return 0.0;
 	}
 
@@ -321,7 +321,7 @@ float swap_usage_rate_read() {
 
 	fp = fopen(RAM_STAT_FILE, "r");
 	if(fp == NULL) {
-		printf("Error: Cannot open %s.\n", RAM_STAT_FILE);
+		fprintf(stderr, "Error: Cannot open %s.\n", RAM_STAT_FILE);
 		return 0.0;
 	}
 
@@ -352,7 +352,7 @@ int NET_stat_read(struct net_stats *nets_info) {
 
 	fp = fopen(NET_STAT_FILE, "r");
 	if(fp == NULL) {
-		printf("Error: Cannot open %s.\n", NET_STAT_FILE);
+		fprintf(stderr, "Error: Cannot open %s.\n", NET_STAT_FILE);
 		return 0;
 	}
 	/* values reset to zeros */
@@ -395,7 +395,7 @@ int sys_IO_stat_read(struct io_stats *total_io_stat) {
 	/* open /proc directory */
 	dir = opendir("/proc");
 	if (dir == NULL) {
-		printf("Error: Cannot open /proc.\n");
+		fprintf(stderr, "Error: Cannot open /proc.\n");
 		return 0;
 	}
 
@@ -437,7 +437,7 @@ int process_IO_stat_read(int pid, struct io_stats *io_info) {
 
 	sprintf(filename, IO_STAT_FILE, pid);
 	if ((fp = fopen(filename, "r")) == NULL) {
-		printf("Error: Cannot open %s.\n", filename);
+		fprintf(stderr, "Error: Cannot open %s.\n", filename);
 		return 0;
 	}
 	io_info->read_bytes = 0;

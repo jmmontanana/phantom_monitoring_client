@@ -20,16 +20,17 @@
 #include <signal.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <time.h>
 
-#include "main.h" // variables like confFile
+#include "main.h" 			// variables like confFile
 #include "thread_handler.h"
-#include "plugin_manager.h" // functions like PluginManager_new(), PluginManager_free(), PluginManager_get_hook()
+#include "plugin_manager.h"	// functions like PluginManager_new(), PluginManager_free(), PluginManager_get_hook()
 #include "plugin_discover.h" // variables like pluginCount, plugins_name; 
                              // functions like discover_plugins(), cleanup_plugins()
 #include "mf_parser.h" // functions like mfp_parse(), ...
 #include "publisher.h" // function like publish_json()
+#include "mf_debug.h"  // functions like log_error(), log_info()...
 
-#define MIN_THREADS 1
 #define BULK_SIZE 4
 #define JSON_LEN 1024
 
@@ -51,9 +52,6 @@ static void init_timings(void);
 void *entryThreads(void *arg);  //threads entry for all threads
 int checkConf(void);
 int gatherMetric(int num);
-int cleanSending(void);
-static void init_timings(void);
-
 
 /* All threads starts here */
 int startThreads(void) {
@@ -70,10 +68,7 @@ int startThreads(void) {
 
 	init_timings();
 
-	/* calculate the sending threads number */
-	//int sending_threads = (int) (pluginCount * publish_json_time * 1.0e9 / min_plugin_interval);
-	int sending_threads = 1;
-	int num_threads = MIN_THREADS + pluginCount + sending_threads;
+	int num_threads = pluginCount + 1;
 	int iret[num_threads];
 	int nums[num_threads];
 
@@ -81,7 +76,7 @@ int startThreads(void) {
 		nums[t] = t;
 		iret[t] = pthread_create(&threads[t], NULL, entryThreads, &nums[t]);
 		if (iret[t]) {
-			printf("ERROR: return code from pthread_create() is %d.\n", iret[t]);
+			log_error("pthread_create() failed for %s.\n", strerror(iret[t]));
 			exit(FAILURE);
 		}
 	}
@@ -97,7 +92,7 @@ int startThreads(void) {
 		sleep(1);
 	
 	//thread join from plugins threads till all the sending threads
-	for (t = MIN_THREADS; t < num_threads; t++) {
+	for (t = 0; t < pluginCount; t++) {
 		pthread_join(threads[t], NULL);
 	}
 
@@ -110,14 +105,11 @@ int startThreads(void) {
 /* entry for all threads */
 void* entryThreads(void *arg) {
 	int *typeT = (int*) arg;
-	if(*typeT == 0) {
-		checkConf();
-	}
-	else if((MIN_THREADS <= *typeT) && (*typeT < MIN_THREADS + pluginCount)) {
+	if(*typeT < pluginCount) {
 		gatherMetric(*typeT);
 	}
 	else {
-		cleanSending();
+		checkConf();
 	}
 	return NULL;
 }
@@ -139,20 +131,20 @@ int checkConf(void)
 int gatherMetric(int num) 
 {
 	int i;
-	char* current_plugin_name = plugins_name[num - MIN_THREADS];
+	char* current_plugin_name = plugins_name[num];
 
 	struct timespec tim = { 0, 0 };
 	struct timespec tim2;
 
-	if (timings[num - MIN_THREADS] >= 10e8) {
-		tim.tv_sec = timings[num - MIN_THREADS] / 10e8;
-		tim.tv_nsec = timings[num- MIN_THREADS] % (long) 10e8;
+	if (timings[num] >= 10e8) {
+		tim.tv_sec = timings[num] / 10e8;
+		tim.tv_nsec = timings[num] % (long) 10e8;
 	} else {
 		tim.tv_sec = 0;
-		tim.tv_nsec = timings[num - MIN_THREADS];
+		tim.tv_nsec = timings[num];
 	}
 	PluginHook hook = PluginManager_get_hook(pm);
-	printf("gather metric %s (#%d) with update interval of %ld ns\n", current_plugin_name, (num- MIN_THREADS), timings[num - MIN_THREADS]);
+	log_info("Gather metrics of plugin %s (#%d) with update interval of %ld ns\n", current_plugin_name, num, timings[num]);
 
 	char json_array[JSON_LEN * BULK_SIZE] = {'\0'};
 	json_array[0] = '[';
@@ -176,7 +168,7 @@ int gatherMetric(int num)
 		}
 		json_array[strlen(json_array) -1] = ']';
 		json_array[strlen(json_array)] = '\0';
-		puts(json_array);
+		debug("JSON sent is :\n%s\n", json_array);
 		publish_json(metrics_publish_URL, json_array);
 		memset(json_array, '\0', JSON_LEN * BULK_SIZE * sizeof(char));
 		json_array[0] = '[';
@@ -187,16 +179,11 @@ int gatherMetric(int num)
 	return SUCCESS;
 }
 
-int cleanSending(void) 
-{
-	return SUCCESS;
-}
-
 /* catch the stop signal */
 void catcher(int signo) 
 {
 	running = 0;
-	printf("Signal %d catched.\n", signo);
+	log_info("Signal %d catched.\n", signo);
 }
 
 /* parse mf_cconfig.ini to get all timing information */
@@ -218,7 +205,7 @@ static void init_timings(void)
 			timings[i] = default_timing;
 		} else {
 			timings[i] = strtol(value, &ptr, 10);
-			printf("timing for plugin %s is %ldns\n", plugins_name[i], timings[i]);
+			log_info("timing for plugin %s is %ldns\n", plugins_name[i], timings[i]);
 		}
 	}
 }

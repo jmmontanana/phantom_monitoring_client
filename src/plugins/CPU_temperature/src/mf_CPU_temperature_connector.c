@@ -51,7 +51,7 @@ int mf_CPU_temperature_init(Plugin_metrics *data, char **events, size_t num_even
 {
 	int retval = sensors_init(NULL);
     if (retval != 0) {
-        printf("ERROR: Couldn't initiate lm-sensors.\n");
+        fprintf(stderr, "ERROR: Couldn't initiate lm-sensors.\n");
         return FAILURE;
     }
 
@@ -134,7 +134,7 @@ int mf_CPU_temperature_init(Plugin_metrics *data, char **events, size_t num_even
         }
     }
     if(event_i == 0) {
-    	printf("ERROR: No events can be measured.\n");
+    	fprintf(stderr, "ERROR: No events can be measured.\n");
     	return FAILURE;
     }
     else {

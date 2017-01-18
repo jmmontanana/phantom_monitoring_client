@@ -58,7 +58,7 @@ int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events)
 	/* check if the papi events available, creat an EventSet for all available events */
 	int i,j;
 	if (PAPI_create_eventset(&EventSet) != PAPI_OK) {
-		printf("PAPI_create_eventset failed.\n");
+		fprintf(stderr, "PAPI_create_eventset failed.\n");
 		return FAILURE;
 	}
 	for (i = 0, j = 0; i < PAPI_EVENTS_NUM; i++ ) {
@@ -75,7 +75,7 @@ int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events)
 	before_time = PAPI_get_real_nsec();
 	
 	if (PAPI_start(EventSet) != PAPI_OK) {
-		printf("PAPI_start failed.\n");
+		fprintf(stderr, "PAPI_start failed.\n");
 		return FAILURE;
 	}
 
@@ -97,7 +97,7 @@ int mf_CPU_perf_sample(Plugin_metrics *data)
 	ret = PAPI_read(EventSet, values);
 	if(ret != PAPI_OK) {
 		char *error = PAPI_strerror(ret);
-		printf("Error while reading the PAPI counters: %s", error);
+		fprintf(stderr, "Error while reading the PAPI counters: %s", error);
         return FAILURE;
 	}
 
@@ -156,19 +156,19 @@ void mf_CPU_perf_shutdown()
 	int ret = PAPI_stop(EventSet, NULL);
     if (ret != PAPI_OK) {
         char *error = PAPI_strerror(ret);
-        printf("Couldn't stop PAPI EventSet: %s", error);
+        fprintf(stderr, "Couldn't stop PAPI EventSet: %s", error);
     }
 
     ret = PAPI_cleanup_eventset(EventSet);
     if (ret != PAPI_OK) {
         char *error = PAPI_strerror(ret);
-        printf("Couldn't cleanup PAPI EventSet: %s", error);
+        fprintf(stderr, "Couldn't cleanup PAPI EventSet: %s", error);
     }
 
     ret = PAPI_destroy_eventset(&EventSet);
     if (ret != PAPI_OK) {
         char *error = PAPI_strerror(ret);
-        printf("Couldn't destroy PAPI EventSet: %s", error);
+        fprintf(stderr, "Couldn't destroy PAPI EventSet: %s", error);
     }
 	PAPI_shutdown();
 }
@@ -183,7 +183,7 @@ static int load_papi_library()
     int ret = PAPI_library_init(PAPI_VER_CURRENT);
     if (ret != PAPI_VER_CURRENT) {
         char *error = PAPI_strerror(ret);
-        printf("Error while loading the PAPI library: %s", error);
+        fprintf(stderr, "Error while loading the PAPI library: %s", error);
         return FAILURE;
     }
 
@@ -206,7 +206,7 @@ int events_are_all_not_valid(char **events, size_t num_events)
 		}
 	}
 	if (counter == 0) {
-		printf("Wrong given metrics.\nPlease given metrics MFLIPS, MFLOPS, or MIPS\n");
+		fprintf(stderr, "Wrong given metrics.\nPlease given metrics MFLIPS, MFLOPS, or MIPS\n");
 		return 1;
 	}
 	else {

@@ -36,7 +36,7 @@ int check_message(char *message);
 void init_curl(void);
 CURL *prepare_publish(char *URL, char *message);
 
-#ifndef DEBUG
+#ifdef NDEBUG
 static size_t write_non_data(void *buffer, size_t size, size_t nmemb, void *userp);
 #endif
 
@@ -52,7 +52,7 @@ int publish_json(char *URL, char *message)
         return FAILED;
     }
 
-    #ifndef DEBUG
+    #ifdef NDEBUG
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_non_data);
     #endif
 
@@ -122,7 +122,7 @@ CURL *prepare_publish(char *URL, char *message)
 }
 
 /* Callback function for writing with libcurl */
-#ifndef DEBUG
+#ifdef NDEBUG
 static size_t write_non_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
     return size * nmemb;

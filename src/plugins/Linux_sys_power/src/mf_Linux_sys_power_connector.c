@@ -352,11 +352,11 @@ int flag_init(char **events, size_t num_events)
 		}
 	}
 	if (flag == 0) {
-		printf("Wrong given metrics.\nPlease given metrics ");
+		fprintf(stderr, "Wrong given metrics.\nPlease given metrics ");
 		for (ii = 0; ii < POWER_EVENTS_NUM; ii++) {
-			printf("%s ", Linux_sys_power_metrics[ii]);
+			fprintf(stderr, "%s ", Linux_sys_power_metrics[ii]);
 		}
-		printf("\n");
+		fprintf(stderr, "\n");
 		return FAILURE;
 	}
 	else {
@@ -375,7 +375,7 @@ int NET_stat_read(struct net_stats *nets_info) {
 
 	fp = fopen(NET_STAT_FILE, "r");
 	if(fp == NULL) {
-		printf("Error: Cannot open %s.\n", NET_STAT_FILE);
+		fprintf(stderr, "Error: Cannot open %s.\n", NET_STAT_FILE);
 		return 0;
 	}
 	/* values reset to zeros */
@@ -409,7 +409,7 @@ int sys_IO_stat_read(struct io_stats *total_io_stat) {
 	/* open /proc directory */
 	dir = opendir("/proc");
 	if (dir == NULL) {
-		printf("Error: Cannot open /proc.\n");
+		fprintf(stderr, "Error: Cannot open /proc.\n");
 		return 0;
 	}
 
@@ -451,7 +451,7 @@ int process_IO_stat_read(int pid, struct io_stats *io_info) {
 
 	sprintf(filename, IO_STAT_FILE, pid);
 	if ((fp = fopen(filename, "r")) == NULL) {
-		printf("Error: Cannot open %s.\n", filename);
+		fprintf(stderr, "Error: Cannot open %s.\n", filename);
 		return 0;
 	}
 	io_info->read_bytes = 0;
@@ -533,7 +533,7 @@ int rapl_init(void) {
 
 	/* creat an PAPI EventSet */
 	if (PAPI_create_eventset(&EventSet) != PAPI_OK) {
-		printf("Error: PAPI_create_eventset failed.\n");
+		fprintf(stderr, "Error: PAPI_create_eventset failed.\n");
 		return FAILURE;
 	}
 
@@ -546,20 +546,20 @@ int rapl_init(void) {
 		sprintf(event_name, "PACKAGE_ENERGY:PACKAGE%d", i);
 		ret = PAPI_add_named_event(EventSet, event_name);
 		if (ret != PAPI_OK) {
-			printf("Error: Couldn't add event: %s\n", event_name);
+			fprintf(stderr, "Error: Couldn't add event: %s\n", event_name);
 		}
 		memset(event_name, '\0', 32 * sizeof(char));
 		sprintf(event_name, "DRAM_ENERGY:PACKAGE%d", i);
 		ret = PAPI_add_named_event(EventSet, event_name);
 		if (ret != PAPI_OK) {
-			printf("Error: Couldn't add event: %s\n", event_name);
+			fprintf(stderr, "Error: Couldn't add event: %s\n", event_name);
 		}
 	}
 	/* set dominator for DRAM energy values based on different CPU model */
 	denominator = rapl_get_denominator();
 
 	if (PAPI_start(EventSet) != PAPI_OK) {
-		printf("PAPI_start failed.\n");
+		fprintf(stderr, "PAPI_start failed.\n");
 		return FAILURE;
 	}
 
@@ -576,7 +576,7 @@ int load_papi_library(void)
     int ret = PAPI_library_init(PAPI_VER_CURRENT);
     if (ret != PAPI_VER_CURRENT) {
         char *error = PAPI_strerror(ret);
-        printf("Error while loading the PAPI library: %s", error);
+        fprintf(stderr, "Error while loading the PAPI library: %s", error);
         return FAILURE;
     }
 
@@ -594,7 +594,7 @@ int check_rapl_component(void)
         cmpinfo = PAPI_get_component_info(cid);
         if (strstr(cmpinfo->name, "rapl")) {
             if (cmpinfo->disabled) {
-                printf("Component RAPL is DISABLED");
+                fprintf(stderr, "Component RAPL is DISABLED");
                 return FAILURE;
             } else {
                 return SUCCESS;
@@ -616,7 +616,7 @@ int hardware_sockets_count(void)
 	hwloc_topology_load(topology);
 	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET);
 	if (depth == HWLOC_TYPE_DEPTH_UNKNOWN) {
-		printf("Error: The number of sockets is unknown.\n");
+		fprintf(stderr, "Error: The number of sockets is unknown.\n");
 		return 0;
 	}
 	skts_num = hwloc_get_nbobjs_by_depth(topology, depth);
@@ -663,7 +663,7 @@ int rapl_stat_read(float *ecpu, float *emem)
 	ret = PAPI_read(EventSet, values);
 	if(ret != PAPI_OK) {
 		char *error = PAPI_strerror(ret);
-		printf("Error while reading the PAPI counters: %s", error);
+		fprintf(stderr, "Error while reading the PAPI counters: %s", error);
         return FAILURE;
 	}
 	

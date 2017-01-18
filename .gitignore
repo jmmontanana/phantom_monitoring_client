@@ -11,3 +11,4 @@ ext/queue/data-structures-library
 *.log
 *.swp
 **mf_*_client
+main

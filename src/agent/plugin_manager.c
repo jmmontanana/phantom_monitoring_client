@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <excess_concurrent_queue.h>
 #include "plugin_manager.h"
+#include "mf_debug.h"		//functions like log_error(), log_info()...
 
 /* Creat a new plugin manager, which contains a hook queue */
 PluginManager* PluginManager_new() {
@@ -57,7 +58,7 @@ PluginHook PluginManager_get_hook(PluginManager *pm) {
 		PluginHookType *typePtr;
 		typePtr = (struct PluginHookType_t *) retPtr;
 		funcPtr = *(typePtr->hook);
-		printf("Using plugin: %s\n", typePtr->name);	
+		log_info("Using plugin %s\n", typePtr->name);	
 	}
 
 	ECQ_free_handle(hook_queue_handle);

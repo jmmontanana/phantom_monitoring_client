@@ -22,6 +22,16 @@ $(EXCESS_QUEUE_C)
 LFLAGS =  -lm $(CURL) $(PAPI) $(APR) $(PARSER) $(PUBLISHER)
 
 #
+# DEBUG SWITCH
+#
+DEBUG ?= 0
+ifeq ($(DEBUG), 1)
+	CFLAGS += -DDEBUG -g
+else
+	CFLAGS += -DNDEBUG
+endif
+
+#
 # includes and libs
 #
 PWD = ${CURDIR}
@@ -76,19 +86,19 @@ excess_concurrent_queue.o:
 	$(CXX) -c $(PWD)/ext/queue/excess_concurrent_queue.cpp -o $@ -I. $(EXCESS_QUEUE) $(EXCESS_QUEUE_C) -fpic
 
 prepare:
-	$(MAKE) -C $(PWD)/src/parser
-	$(MAKE) -C $(PWD)/src/publisher
+	$(MAKE) -C $(PWD)/src/parser DEBUG=$(DEBUG)
+	$(MAKE) -C $(PWD)/src/publisher DEBUG=$(DEBUG)
 
 main: excess_concurrent_queue.o $(SRC)/main.o $(SRC)/thread_handler.o $(SRC)/plugin_discover.o $(SRC)/plugin_manager.o
 	$(CXX) -o $@ $^ -lrt -ldl -Wl,--export-dynamic $(CFLAGS) $(LFLAGS)
 
 plugins:
-	$(MAKE) -C $(PLUGIN_DIR)/Board_power
-	$(MAKE) -C $(PLUGIN_DIR)/CPU_perf
-	$(MAKE) -C $(PLUGIN_DIR)/CPU_temperature
-	$(MAKE) -C $(PLUGIN_DIR)/Linux_resources
-	$(MAKE) -C $(PLUGIN_DIR)/Linux_sys_power
-	$(MAKE) -C $(PLUGIN_DIR)/NVML
+	$(MAKE) -C $(PLUGIN_DIR)/Board_power DEBUG=$(DEBUG)
+	$(MAKE) -C $(PLUGIN_DIR)/CPU_perf DEBUG=$(DEBUG)
+	$(MAKE) -C $(PLUGIN_DIR)/CPU_temperature DEBUG=$(DEBUG)
+	$(MAKE) -C $(PLUGIN_DIR)/Linux_resources DEBUG=$(DEBUG)
+	$(MAKE) -C $(PLUGIN_DIR)/Linux_sys_power DEBUG=$(DEBUG)
+	$(MAKE) -C $(PLUGIN_DIR)/NVML DEBUG=$(DEBUG)
 
 lib:
 

@@ -56,7 +56,7 @@ init_mf_plugin_Linux_sys_power(PluginManager *pm)
     monitoring_data = malloc(sizeof(Plugin_metrics));
     int ret = mf_Linux_sys_power_init(monitoring_data, conf_data->keys, conf_data->size);
     if(ret == 0) {
-        printf("Error: Plugin init function failed. \n");
+        fprintf(stderr, "Error: Plugin init function failed. \n");
         return ret;
     }
     /*

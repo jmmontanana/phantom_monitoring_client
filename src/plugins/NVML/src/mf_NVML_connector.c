@@ -62,7 +62,7 @@ int mf_NVML_init(Plugin_metrics *data, char **events, size_t num_events)
     /* count the number of GPU devices */
     nvmlReturn_t ret = nvmlDeviceGetCount(&devices_count);
     if(ret != NVML_SUCCESS) {
-    	printf("mf_NVML_init failed during counting GPU devices.\n");
+    	fprintf(stderr, "mf_NVML_init failed during counting GPU devices.\n");
     	return FAILURE;
     }
 
@@ -82,7 +82,7 @@ int mf_NVML_init(Plugin_metrics *data, char **events, size_t num_events)
     	devices[i] = malloc(sizeof(nvmlDevice_t));
     	ret = nvmlDeviceGetHandleByIndex(i, devices[i]);
     	if(ret != NVML_SUCCESS) {
-    		printf("mf_NVML_init failed during getting GPU device handle.\n");
+    		fprintf(stderr, "mf_NVML_init failed during getting GPU device handle.\n");
     		return FAILURE;
     	}
     }
@@ -236,11 +236,11 @@ int events_are_all_not_valid(char **events, size_t num_events)
 		}
 	}
 	if (counter == 0) {
-		printf("Wrong given metrics.\nPlease given metrics ");
+		fprintf(stderr, "Wrong given metrics.\nPlease given metrics ");
 		for (ii = 0; ii < NVML_EVENTS_NUM; ii++) {
-			printf("%s ", NVML_metrics[ii]);
+			fprintf(stderr, "%s ", NVML_metrics[ii]);
 		}
-		printf("\n");
+		fprintf(stderr, "\n");
 		return 1;
 	}
 	else {
@@ -256,7 +256,7 @@ static int load_nvml_library()
 {
 	nvmlReturn_t ret = nvmlInit();
 	if(ret != NVML_SUCCESS) {
-    	printf("mf_NVML_init failed during loading nvml library.\n");
+    	fprintf(stderr, "mf_NVML_init failed during loading nvml library.\n");
     	return FAILURE;
     }
 	return SUCCESS;

@@ -22,7 +22,8 @@
 #include <stdint.h>
 
 #include "plugin_discover.h"
-#include "mf_parser.h"  //mfp_get_value()
+#include "mf_debug.h"		//functions like log_error(), log_info()...
+#include "mf_parser.h"  	//mfp_get_value()
 
 /*******************************************************************************
  * Variable Declarations
@@ -59,7 +60,7 @@ void* discover_plugins(const char *dirname, PluginManager *pm) {
 	struct dirent *direntry;
 
 	if (!dir) {
-		printf("Unable to open directory %s!\n", dirname);
+		log_error("Unable to open directory %s!\n", dirname);
 		return NULL ;
 	}
 
@@ -140,7 +141,7 @@ void* load_plugin(char *name, char *fullpath, PluginManager *pm) {
 	void *libhandle = dlopen(slashed_path, RTLD_NOW);
 
 	if (!libhandle) {
-		printf("Error loading library: %s\n", dlerror());
+		log_error("Unable to load library %s\n", dlerror());
 		return NULL;
 	}
 
@@ -152,7 +153,7 @@ void* load_plugin(char *name, char *fullpath, PluginManager *pm) {
 	void *ptr = dlsym(libhandle, init_func_name);
 	free(init_func_name);
 	if (!ptr) {
-		printf("Error loading init function: %s\n", dlerror());
+		log_error("Unable to load init function %s\n", dlerror());
 		return NULL;
 	}
 
@@ -161,7 +162,7 @@ void* load_plugin(char *name, char *fullpath, PluginManager *pm) {
 	int rc = init_func(pm);
 
 	if (rc < 0) {
-		printf("Error: Plugin init function returned %d\n", rc);
+		log_error("Plugin init function failed for %s\n", strerror(rc));
 		dlclose(libhandle);
 		return NULL ;
 	}

@@ -20,10 +20,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
+#include <sys/stat.h>
 
 #include "main.h"
-#include "thread_handler.h" //function startThreads() is defined
-#include "mf_parser.h" // function mfp_parse() is defined
+#include "mf_debug.h"		//functions like log_error(), log_info()...
+#include "thread_handler.h"	//functions like startThreads()...
+#include "mf_parser.h" 		//functions like mfp_parse()...
 
 #define DEFAULT_APP "monitoring_test"
 #define DEFAULT_EXP "12345678"
@@ -44,6 +47,8 @@ char *component_id;
 char *metrics_publish_URL;
 char *platform_id;
 
+FILE *logFile;		//declared in mf_debug.h
+
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
@@ -53,7 +58,8 @@ int pwd_is_set = 0;
 /*******************************************************************************
  * Forward Declarations
  ******************************************************************************/
-static void set_pwd(void);
+void set_pwd(void);
+void createLogFile(void);
 int writeTmpPID(void);
 int prepare(void);
 
@@ -80,29 +86,31 @@ int main(int argc, char* argv[]) {
 	/* assigns the current working directory to a variable */
 	set_pwd();
 
+	/* create log file, use log_error(), log_info() and log_warn() afterwards */
+	createLogFile();
+
 	/* write PID to a file ("tmp_pid") in `pwd`; can be used to kill the agent */
 	if(writeTmpPID() == FAILURE) {
 		exit(FAILURE);
 	}
 
 	/* parse command-line arguments */
-	static char usage[] = "usage: %s [-a application_id] [-e experiment_id] [-c component_id] [-h help]\n";
 	while ((c = getopt(argc, argv, "a:e:c:h")) != -1)
 		switch (c) {
 		case 'a':
 			strcpy(application_id, optarg);
 			application_flag = 1;
-			printf("> application_id : %s\n", application_id);
+			log_info("> application_id : %s\n", application_id);
 			break;
 		case 'e':
 			strcpy(experiment_id, optarg);
 			experiment_flag = 1;
-			printf("> experiment_id : %s\n", experiment_id);
+			log_info("> experiment_id : %s\n", experiment_id);
 			break;
 		case 'c':
 			strcpy(component_id, optarg);
 			component_flag = 1;
-			printf("> component_id : %s\n", component_id);
+			log_info("> component_id : %s\n", component_id);
 			break;
 		case 'h':
 			help = 1;
@@ -113,7 +121,9 @@ int main(int argc, char* argv[]) {
 	}
 	/* print usage */
 	if (err || help) {
-		printf(usage, argv[0]);
+		char usage[256] = {'\0'};
+		sprintf(usage, "usage: %s [-a application_id] [-e experiment_id] [-c component_id] [-h help]\n", argv[0]);
+		log_error("%s", usage);
 		exit(FAILURE);
 	}
 	if(application_flag == 0) {
@@ -128,27 +138,28 @@ int main(int argc, char* argv[]) {
 	
 	/* set the configuration file */
 	sprintf(confFile, "%s/%s", pwd, "../mf_config.ini");
-	printf("Configuration taken from: %s\n", confFile);
+	log_info("Configuration taken from: %s.\n", confFile);
 	
 	/* try to parse configuration file */
 	if (mfp_parse(confFile) == FAILURE) {
 		/* could not parse configuration file */
-		printf("Stopping service...could not parse configuration.\n");
+		fprintf(logFile, "[ERROR] Stopping service...could not parse configuration.\n");
 		exit(FAILURE);
 	}
 
 	if (prepare() == FAILURE) {
-		printf("Stopping service...could not prepare URLs for sending metrics to server.\n");
+		fprintf(logFile, "[ERROR] Stopping service...could not prepare URLs for sending metrics to server.\n");
 		exit(FAILURE);
 	}
 
 	if(startThreads() == FAILURE) {
-		printf("Stopping service...could not start the threads.\n");
+		fprintf(logFile, "[ERROR] Stopping service...could not start the threads.\n");
 		exit(FAILURE);
 	}
 
 	/* clean up tasks */
-	printf("Stopping service ...\n");
+	fprintf(logFile, "[INFO] Stopping service ...\n");
+	fclose(logFile);
 	
 	unlink(name); // delete the file which stores the tmp pid
 	free(pwd);
@@ -167,7 +178,7 @@ int main(int argc, char* argv[]) {
 }
 
 /* assigns the current working directory to a variable */
-static void set_pwd(void)
+void set_pwd(void)
 {
 	if (pwd_is_set) {
 		return;
@@ -199,15 +210,49 @@ int writeTmpPID(void)
 	int pid = getpid();
 	FILE *tmpFile = fopen(name, "w");
 	if (tmpFile == NULL) {
-		printf("Error while creating file %s to store PID %d.\n", name, pid);
+		log_error("Failed to create file %s to store the PID.\n", name);
 		return FAILURE;
 	} else {
 		fprintf(tmpFile, "%d", pid);
 		fclose(tmpFile);
 	}
 
-	printf("PID is: %d\n", pid);
 	return SUCCESS;
+}
+
+/* Initializing and creating the log file */
+void createLogFile(void) 
+{
+	int errnum;
+
+	if (!pwd_is_set) {
+		set_pwd();
+	}
+	char logFileName[300] = { '\0' };
+	char logFileFolder[300] = { '\0' };
+
+	time_t curTime;
+	time(&curTime);
+	struct tm *time_info = localtime(&curTime);
+
+	char timeForFile[50];
+
+	strftime(timeForFile, 50, "%F-%T", time_info);
+	sprintf(logFileFolder, "%s/log", pwd);
+	sprintf(logFileName, "%s/log/log-%s", pwd, timeForFile);
+	fprintf(stderr, "using logfile: %s\n", logFileName);
+
+	struct stat st = { 0 };
+	if (stat(logFileFolder, &st) == -1)
+		mkdir(logFileFolder, 0700);
+	logFile = fopen(logFileName, "w");
+	if (logFile == NULL) {
+		errnum = errno;
+		fprintf(stderr, "Could not create log file: %s\n", logFileName);
+		fprintf(stderr, "Error creating log: %s\n", strerror(errnum));
+	} else {
+		log_info("Starting service at %s...\n", timeForFile);
+	}
 }
 
 /* prepare metrics_publish_URL and platform_id, based on mf_config.ini*/
