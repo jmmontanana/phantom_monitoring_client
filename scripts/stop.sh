@@ -16,7 +16,8 @@
 
 
 PID=`ps -ef| grep -v grep | grep mf_client | awk '{print $2}'`
-kill -9 $PID
+kill $PID
+rm -f nohup.out
 echo "mf_client stopped."
 
 #end
