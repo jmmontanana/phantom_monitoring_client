@@ -5,7 +5,7 @@ CC = gcc
 COPT_SO = ${CFLAGS} -fpic
 
 CFLAGS = -std=gnu99 -pedantic -Wall -Wwrite-strings  -Wpointer-arith -Wcast-align -O0 -ggdb \
--I${SRC} ${NVML_INC} ${PARSER_INC} ${UTILS_INC} ${AGENT_INC} ${EXCESS_QUEUE_INC}
+-I${SRC} ${NVML_INC} ${PARSER_INC} ${UTILS_INC} ${AGENT_INC} ${EXCESS_QUEUE_INC} ${CORE_INC}
 
 LFLAGS = -lrt -ldl ${NVML_LIB}
 
@@ -29,6 +29,7 @@ PARSER_INC = -I${CURDIR}/../../parser/src
 UTILS_INC = -I${CURDIR}/../utils
 AGENT_INC = -I${CURDIR}/../../agent
 EXCESS_QUEUE_INC = -I${CURDIR}/../../../ext/queue
+CORE_INC = -I${CURDIR}/../../core 
 
 all: clean prepare mf_NVML_client mf_plugin_NVML.so
 

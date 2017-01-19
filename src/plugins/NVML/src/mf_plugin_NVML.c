@@ -21,6 +21,7 @@
 #include <plugin_manager.h> /* mf_plugin_xxx_hook */
 #include <mf_parser.h> /* mfp_data */
 #include <plugin_utils.h> /* Plugin_metrics */
+#include <mf_debug.h>
 
 #include "mf_NVML_connector.h"
 
@@ -56,7 +57,8 @@ init_mf_plugin_NVML(PluginManager *pm)
     monitoring_data = malloc(sizeof(Plugin_metrics));
     int ret = mf_NVML_init(monitoring_data, conf_data->keys, conf_data->size);
     if(ret == 0) {
-        printf("Error: Plugin init function failed. \n");
+        char plugin_name[] = "NVML";
+        log_error("Plugin %s init function failed.\n", plugin_name);
         return ret;
     }
     /*

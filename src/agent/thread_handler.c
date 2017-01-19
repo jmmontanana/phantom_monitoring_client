@@ -31,7 +31,6 @@
 #include "publisher.h" // function like publish_json()
 #include "mf_debug.h"  // functions like log_error(), log_info()...
 
-#define BULK_SIZE 4
 #define JSON_LEN 1024
 
 #define SUCCESS 1
@@ -40,6 +39,7 @@
  * Variable Declarations
  ******************************************************************************/
 int running;
+int bulk_size;
 static PluginManager *pm;
 pthread_t threads[256];
 long timings[256];
@@ -67,6 +67,10 @@ int startThreads(void) {
 	void* pdstate = discover_plugins(pluginLocation, pm);
 
 	init_timings();
+
+	char tmp_string[20] = {'\0'};
+	mfp_get_value("generic", "bulk_size", tmp_string);
+	bulk_size = atoi(tmp_string);
 
 	int num_threads = pluginCount + 1;
 	int iret[num_threads];
@@ -146,17 +150,17 @@ int gatherMetric(int num)
 	PluginHook hook = PluginManager_get_hook(pm);
 	log_info("Gather metrics of plugin %s (#%d) with update interval of %ld ns\n", current_plugin_name, num, timings[num]);
 
-	char json_array[JSON_LEN * BULK_SIZE] = {'\0'};
+	char *json_array = calloc(JSON_LEN * bulk_size, sizeof(char));
 	json_array[0] = '[';
 	char msg[JSON_LEN] = {'\0'};
 	char static_json[512] = {'\0'};
 
 	sprintf(static_json, "{\"WorkflowID\":\"%s\",\"ExperimentID\":\"%s\",\"TaskID\":\"%s\",\"host\":\"%s\",", 
-		application_id, experiment_id, component_id, platform_id);
+		application_id, experiment_id, task_id, platform_id);
 
 	while (running) {
 
-		for(i=0; i<BULK_SIZE; i++) {
+		for(i=0; i<bulk_size; i++) {
 			memset(msg, '\0', JSON_LEN * sizeof(char));
 			char *json = hook();	//malloc of json in hook()
 			nanosleep(&tim, &tim2);
@@ -170,7 +174,7 @@ int gatherMetric(int num)
 		json_array[strlen(json_array)] = '\0';
 		debug("JSON sent is :\n%s\n", json_array);
 		publish_json(metrics_publish_URL, json_array);
-		memset(json_array, '\0', JSON_LEN * BULK_SIZE * sizeof(char));
+		memset(json_array, '\0', JSON_LEN * bulk_size * sizeof(char));
 		json_array[0] = '[';
 		
 	}

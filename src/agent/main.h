@@ -11,7 +11,7 @@ extern char *application_id;
 
 extern char *experiment_id;
 
-extern char *component_id;
+extern char *task_id;
 
 extern char *metrics_publish_URL;
 

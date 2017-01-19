@@ -21,6 +21,7 @@
 #include <plugin_manager.h> /* mf_plugin_xxx_hook */
 #include <mf_parser.h> /* mfp_data */
 #include <plugin_utils.h> /* Plugin_metrics */
+#include <mf_debug.h>
 
 #include "mf_Linux_resources_connector.h"
 
@@ -56,7 +57,8 @@ init_mf_plugin_Linux_resources(PluginManager *pm)
     monitoring_data = malloc(sizeof(Plugin_metrics));
     int ret = mf_Linux_resources_init(monitoring_data, conf_data->keys, conf_data->size);
     if(ret == 0) {
-        fprintf(stderr, "Error: Plugin init function failed. \n");
+        char plugin_name[] = "Linux_resources";
+        log_error("Plugin %s init function failed.\n", plugin_name);
         return ret;
     }
     /*

@@ -42,7 +42,7 @@ char *pwd;
 char *confFile;
 char *application_id;
 char *experiment_id;
-char *component_id;
+char *task_id;
 
 char *metrics_publish_URL;
 char *platform_id;
@@ -68,9 +68,9 @@ int prepare(void);
 int main(int argc, char* argv[]) {
 	extern char *optarg;
 	int c;
-	int application_flag = 0; //arg "application_id" exists flag
+	int application_flag = 0;	//arg "application_id" exists flag
 	int experiment_flag = 0;	//arg "experiment_id" exists flag
-	int component_flag = 0;	//arg "component_id" exists flag
+	int task_flag = 0;			//arg "task_id" exists flag
 
 	int err = 0, help = 0;
 	
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 	name = calloc(256, sizeof(char)); //name of the tmp pid file
 	application_id = calloc(128, sizeof(char));
 	experiment_id = calloc(128, sizeof(char));
-	component_id = calloc(128, sizeof(char));
+	task_id = calloc(128, sizeof(char));
 
 	confFile = calloc(256, sizeof(char));
 
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	/* parse command-line arguments */
-	while ((c = getopt(argc, argv, "a:e:c:h")) != -1)
+	while ((c = getopt(argc, argv, "a:e:t:h")) != -1)
 		switch (c) {
 		case 'a':
 			strcpy(application_id, optarg);
@@ -107,10 +107,10 @@ int main(int argc, char* argv[]) {
 			experiment_flag = 1;
 			log_info("> experiment_id : %s\n", experiment_id);
 			break;
-		case 'c':
-			strcpy(component_id, optarg);
-			component_flag = 1;
-			log_info("> component_id : %s\n", component_id);
+		case 't':
+			strcpy(task_id, optarg);
+			task_flag = 1;
+			log_info("> task_id : %s\n", task_id);
 			break;
 		case 'h':
 			help = 1;
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
 	/* print usage */
 	if (err || help) {
 		char usage[256] = {'\0'};
-		sprintf(usage, "usage: %s [-a application_id] [-e experiment_id] [-c component_id] [-h help]\n", argv[0]);
+		sprintf(usage, "usage: %s [-a application_id] [-e experiment_id] [-t task_id] [-h help]\n", argv[0]);
 		log_error("%s", usage);
 		exit(FAILURE);
 	}
@@ -132,8 +132,8 @@ int main(int argc, char* argv[]) {
 	if(experiment_flag == 0) {
 		strcpy(experiment_id, DEFAULT_EXP);
 	}
-	if(component_flag == 0) {
-		strcpy(component_id, DEFAULT_COMP);
+	if(task_flag == 0) {
+		strcpy(task_id, DEFAULT_COMP);
 	}
 	
 	/* set the configuration file */
@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
 
 	free(application_id);
 	free(experiment_id);
-	free(component_id);
+	free(task_id);
 	free(metrics_publish_URL);
 	free(platform_id);
 
