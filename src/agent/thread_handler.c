@@ -43,6 +43,7 @@ int bulk_size;
 static PluginManager *pm;
 pthread_t threads[256];
 long timings[256];
+PluginHook *hooks;
 
 /*******************************************************************************
  * Forward Declarations
@@ -66,15 +67,23 @@ int startThreads(void) {
 
 	void* pdstate = discover_plugins(pluginLocation, pm);
 
+	/* get timings[i] for each plugin */
 	init_timings();
 
+	/*get bulk_size from mf_config.ini */
 	char tmp_string[20] = {'\0'};
 	mfp_get_value("generic", "bulk_size", tmp_string);
 	bulk_size = atoi(tmp_string);
 
+
 	int num_threads = pluginCount + 1;
 	int iret[num_threads];
 	int nums[num_threads];
+
+	hooks = (PluginHook *)malloc(pluginCount * sizeof(PluginHook));
+	for (t = 0; t < pluginCount; t++) {
+		hooks[t] = PluginManager_get_hook(pm);
+	}
 
 	for (t = 0; t < num_threads; t++) {
 		nums[t] = t;
@@ -147,7 +156,6 @@ int gatherMetric(int num)
 		tim.tv_sec = 0;
 		tim.tv_nsec = timings[num];
 	}
-	PluginHook hook = PluginManager_get_hook(pm);
 	log_info("Gather metrics of plugin %s (#%d) with update interval of %ld ns\n", current_plugin_name, num, timings[num]);
 
 	char *json_array = calloc(JSON_LEN * bulk_size, sizeof(char));
@@ -162,7 +170,7 @@ int gatherMetric(int num)
 
 		for(i=0; i<bulk_size; i++) {
 			memset(msg, '\0', JSON_LEN * sizeof(char));
-			char *json = hook();	//malloc of json in hook()
+			char *json = hooks[num]();	//malloc of json in hooks[num]()
 			nanosleep(&tim, &tim2);
 			sprintf(msg, "%s%s},", static_json, json);
 			strcat(json_array, msg);
@@ -179,7 +187,6 @@ int gatherMetric(int num)
 		
 	}
 	
-	hook();
 	return SUCCESS;
 }
 
