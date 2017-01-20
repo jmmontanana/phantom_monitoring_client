@@ -185,7 +185,7 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
     sprintf(json, "\"plugin\":\"NVML\"");
     clock_gettime(CLOCK_REALTIME, &timestamp);
     double ts = timestamp.tv_sec + (double)(timestamp.tv_nsec / 1.0e9);
-    sprintf(tmp, ",\"@timestamp\":\"%f\"", ts);
+    sprintf(tmp, ",\"@timestamp\":\"%.4f\"", ts);
     strcat(json, tmp);
 
     /*
@@ -197,7 +197,7 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
             sub_part = strstr(data->events[ii], ":");
             sub_part++;
 			if(strcmp(events[i], sub_part) == 0 && (data->values[ii] >= 0.0)) {
-				sprintf(tmp, ",\"%s\":%f", data->events[ii], data->values[ii]);
+				sprintf(tmp, ",\"%s\":%.3f", data->events[ii], data->values[ii]);
 				strcat(json, tmp);
 			}
 		}

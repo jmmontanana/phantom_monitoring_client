@@ -121,7 +121,7 @@ void mf_Board_power_to_json(Plugin_metrics *data, char **events, size_t num_even
     sprintf(json, "\"plugin\":\"Board_power\"");
     clock_gettime(CLOCK_REALTIME, &timestamp);
     double ts = timestamp.tv_sec + (double)(timestamp.tv_nsec / 1.0e9);
-    sprintf(tmp, ",\"@timestamp\":\"%f\"", ts);
+    sprintf(tmp, ",\"@timestamp\":\"%.4f\"", ts);
     strcat(json, tmp);
 
     /*
@@ -131,7 +131,7 @@ void mf_Board_power_to_json(Plugin_metrics *data, char **events, size_t num_even
 		for(ii = 0; ii < data->num_events; ii++) {
 			/* if metrics' name matches, append the metrics to the json string */
 			if(strcmp(events[i], data->events[ii]) == 0) {
-				sprintf(tmp, ",\"%s\":%f", data->events[ii], data->values[ii]);
+				sprintf(tmp, ",\"%s\":%.3f", data->events[ii], data->values[ii]);
 				strcat(json, tmp);
 			}
 		}

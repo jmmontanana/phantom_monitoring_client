@@ -310,7 +310,7 @@ void mf_Linux_sys_power_to_json(Plugin_metrics *data, char *json)
      * prepares the json string, including current timestamp, and name of the plugin
      */
     sprintf(json, "\"plugin\":\"Linux_sys_power\"");
-    sprintf(tmp, ",\"@timestamp\":\"%f\"", after_time);
+    sprintf(tmp, ",\"@timestamp\":\"%.4f\"", after_time);
     strcat(json, tmp);
 
     /*
@@ -327,7 +327,7 @@ void mf_Linux_sys_power_to_json(Plugin_metrics *data, char *json)
 
 		/* if metrics' value >= 0.0, append the metrics to the json string */
 		if(data->values[i] >= 0.0) {
-			sprintf(tmp, ",\"%s\":%f", data->events[i], data->values[i]);
+			sprintf(tmp, ",\"%s\":%.3f", data->events[i], data->values[i]);
 			strcat(json, tmp);
 		}
 	}
