@@ -43,6 +43,7 @@ int bulk_size;
 static PluginManager *pm;
 pthread_t threads[256];
 long timings[256];
+struct timespec sleep_tims[256];
 PluginHook *hooks;
 
 /*******************************************************************************
@@ -67,7 +68,7 @@ int startThreads(void) {
 
 	void* pdstate = discover_plugins(pluginLocation, pm);
 
-	/* get timings[i] for each plugin */
+	/* get sleep_tims for each plugin */
 	init_timings();
 
 	/*get bulk_size from mf_config.ini */
@@ -135,6 +136,8 @@ int checkConf(void)
 		char wait_some_seconds[20] = {'\0'};
 		mfp_get_value("timings", "update_configuration", wait_some_seconds);
 		sleep(atoi(wait_some_seconds));
+
+		/* update sleep_tims for all plugins */
 		init_timings();
 	}
 	return SUCCESS;
@@ -144,19 +147,9 @@ int checkConf(void)
 int gatherMetric(int num) 
 {
 	int i;
-	char* current_plugin_name = plugins_name[num];
+	long timings = sleep_tims[num].tv_sec * 10e8 + sleep_tims[num].tv_nsec;
 
-	struct timespec tim = { 0, 0 };
-	struct timespec tim2;
-
-	if (timings[num] >= 10e8) {
-		tim.tv_sec = timings[num] / 10e8;
-		tim.tv_nsec = timings[num] % (long) 10e8;
-	} else {
-		tim.tv_sec = 0;
-		tim.tv_nsec = timings[num];
-	}
-	log_info("Gather metrics of plugin %s (#%d) with update interval of %ld ns\n", current_plugin_name, num, timings[num]);
+	log_info("Gather metrics of plugin %s (#%d) with update interval of %ld ns\n", plugins_name[num], num, timings);
 
 	char *json_array = calloc(JSON_LEN * bulk_size, sizeof(char));
 	json_array[0] = '[';
@@ -171,12 +164,16 @@ int gatherMetric(int num)
 		for(i=0; i<bulk_size; i++) {
 			memset(msg, '\0', JSON_LEN * sizeof(char));
 			char *json = hooks[num]();	//malloc of json in hooks[num]()
-			nanosleep(&tim, &tim2);
-			sprintf(msg, "%s%s},", static_json, json);
-			strcat(json_array, msg);
 			if(json != NULL) {
+				sprintf(msg, "%s%s},", static_json, json);
+				strcat(json_array, msg);
 				free(json);
 			}
+			if(nanosleep(&sleep_tims[num], NULL) != 0) {
+				/*nano sleep failed,  in case that
+				  the call is interrupted by a signal handler or encounters an error */
+				break;
+			};
 		}
 		json_array[strlen(json_array) -1] = ']';
 		json_array[strlen(json_array)] = '\0';
@@ -186,7 +183,10 @@ int gatherMetric(int num)
 		json_array[0] = '[';
 		
 	}
-	
+
+	if(json_array != NULL) {
+		free(json_array);
+	}
 	return SUCCESS;
 }
 
@@ -205,7 +205,7 @@ static void init_timings(void)
 	mfp_get_value("timings", "default", timing);
 	long default_timing = strtol(timing, &ptr, 10);
 
-	for (int i = 0; i < pluginCount; ++i) {
+	for (int i = 0; i < pluginCount; i++) {
 		if (plugins_name[i] == NULL) {
 			continue;
 		}
@@ -216,7 +216,16 @@ static void init_timings(void)
 			timings[i] = default_timing;
 		} else {
 			timings[i] = strtol(value, &ptr, 10);
-			log_info("timing for plugin %s is %ldns\n", plugins_name[i], timings[i]);
+			log_info("Timing for plugin %s is %ldns\n", plugins_name[i], timings[i]);
+
+			/* update the sleep_tims for the plugin */
+			if (timings[i] >= 10e8) {
+				sleep_tims[i].tv_sec = timings[i] / 10e8;
+				sleep_tims[i].tv_nsec = timings[i] % (long) 10e8;
+			} else {
+				sleep_tims[i].tv_sec = 0;
+				sleep_tims[i].tv_nsec = timings[i];
+			}
 		}
 	}
 }

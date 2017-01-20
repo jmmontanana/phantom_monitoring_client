@@ -326,11 +326,11 @@ float swap_usage_rate_read() {
 	}
 
 	while(fgets(line, 1024, fp) != NULL) {
-		if (!strncmp(line, "SwapTotal:", 9)) {
-			sscanf(line + 9, "%d", &SwapTotal);
+		if (!strncmp(line, "SwapTotal:", 10)) {
+			sscanf(line + 10, "%d", &SwapTotal);
 		}
-		if (!strncmp(line, "SwapFree:", 8)) {
-			sscanf(line + 8, "%d", &SwapFree);
+		if (!strncmp(line, "SwapFree:", 9)) {
+			sscanf(line + 9, "%d", &SwapFree);
 		}
 		if ((SwapTotal * SwapFree) != 0) {
 			swap_usage_rate = (SwapTotal - SwapFree) * 100.0 / SwapTotal;
