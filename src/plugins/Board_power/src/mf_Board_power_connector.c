@@ -120,8 +120,8 @@ void mf_Board_power_to_json(Plugin_metrics *data, char **events, size_t num_even
      */
     sprintf(json, "\"plugin\":\"Board_power\"");
     clock_gettime(CLOCK_REALTIME, &timestamp);
-    double ts = timestamp.tv_sec + (double)(timestamp.tv_nsec / 1.0e9);
-    sprintf(tmp, ",\"@timestamp\":\"%.4f\"", ts);
+    double ts = timestamp.tv_sec * 1.0e3 + (double)(timestamp.tv_nsec / 1.0e6); // in millisecond
+    sprintf(tmp, ",\"local_timestamp\":\"%.1f\"", ts);
     strcat(json, tmp);
 
     /*
