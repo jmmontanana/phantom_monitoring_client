@@ -33,6 +33,7 @@
 mfp_data *conf_data = NULL;
 Plugin_metrics *monitoring_data = NULL;
 int is_initialized = 0;
+int num_cores = 1;
 
 /*******************************************************************************
  * Forward Declarations
@@ -52,10 +53,18 @@ init_mf_plugin_CPU_perf(PluginManager *pm)
     mfp_get_data_filtered_by_value("mf_plugin_CPU_perf", conf_data, "on");
 
     /*
+     * get the number of cpu cores for monitoring
+     */
+    char str_num_cores[10]={'\0'};
+    mfp_get_value("mf_plugin_CPU_perf", "MAX_CPU_CORES", str_num_cores);
+    num_cores = atoi(str_num_cores);
+    
+
+    /*
      * initialize the monitoring data
      */
     monitoring_data = malloc(sizeof(Plugin_metrics));
-    int ret = mf_CPU_perf_init(monitoring_data, conf_data->keys, conf_data->size);
+    int ret = mf_CPU_perf_init(monitoring_data, conf_data->keys, conf_data->size, num_cores);
     if(ret == 0) {
         char plugin_name[] = "CPU_perf";
         log_error("Plugin %s init function failed.\n", plugin_name);
@@ -77,7 +86,7 @@ mf_plugin_CPU_perf_hook()
         /*
          * sampling 
          */
-        mf_CPU_perf_sample(monitoring_data);
+        mf_CPU_perf_sample(monitoring_data, num_cores);
 
         /*
          * Prepares a json string, including current timestamp, name of the plugin,

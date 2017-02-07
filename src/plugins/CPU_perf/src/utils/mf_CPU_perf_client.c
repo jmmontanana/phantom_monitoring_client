@@ -22,6 +22,7 @@
 #include "mf_CPU_perf_connector.h"
 #include "plugin_utils.h"
 
+static int num_cores = 10;
 /*******************************************************************************
  * Forward Declarations
  ******************************************************************************/
@@ -53,7 +54,7 @@ int main(int argc, char** argv)
      * initialize the plugin
      */
     Plugin_metrics *monitoring_data = malloc(sizeof(Plugin_metrics));
-    int ret = mf_CPU_perf_init(monitoring_data, argv, argc);
+    int ret = mf_CPU_perf_init(monitoring_data, argv, argc, num_cores);
     if(ret == 0) {
         printf("Error: Plugin init function failed.\n");
         exit(0);
@@ -68,7 +69,7 @@ int main(int argc, char** argv)
         /*
          * sampling 
          */
-        mf_CPU_perf_sample(monitoring_data);
+        mf_CPU_perf_sample(monitoring_data, num_cores);
 
         /*
          * Prepares a json string, including current timestamp, name of the plugin,
@@ -89,7 +90,7 @@ int main(int argc, char** argv)
 /* Exit handler */
 static void my_exit_handler(int s)
 {
-    mf_CPU_perf_shutdown();
+    mf_CPU_perf_shutdown(num_cores);
     puts("Bye bye!\n");
     exit(0);
 }

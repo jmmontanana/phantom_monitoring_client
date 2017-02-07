@@ -23,14 +23,14 @@
  *
  *  @return 1 on success; 0 otherwise.
  */
-int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events);
+int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events, int num_cores);
 
 
 /** @brief Samples all possible events and stores data into the Plugin_metrics
  *
  *  @return 1 on success; 0 otherwise.
  */
-int mf_CPU_perf_sample(Plugin_metrics *data);
+int mf_CPU_perf_sample(Plugin_metrics *data, int num_cores);
 
 
 /** @brief Formats the sampling data into a json string
@@ -45,6 +45,6 @@ void mf_CPU_perf_to_json(Plugin_metrics *data, char **events, size_t num_events,
  *
  *  This methods shuts down gracefully for sampling.
  */
-void mf_CPU_perf_shutdown();
+void mf_CPU_perf_shutdown(int num_cores);
 
 #endif /* _CPU_PERF_CONNECTOR_H */
