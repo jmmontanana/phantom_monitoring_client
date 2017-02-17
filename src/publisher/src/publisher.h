@@ -24,4 +24,7 @@
  */
 int publish_json(char *URL, char *message);
 
+int publish_file(char *URL, char *static_string, char *filename);
+
+int create_new_experiment(char *URL, char *message, char *experiment_id);
 #endif

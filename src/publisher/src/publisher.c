@@ -35,10 +35,12 @@ int check_URL(char *URL);
 int check_message(char *message);
 void init_curl(void);
 CURL *prepare_publish(char *URL, char *message);
+static size_t get_stream_data(void *buffer, size_t size, size_t nmemb, void *stream);
 
 #ifdef NDEBUG
 static size_t write_non_data(void *buffer, size_t size, size_t nmemb, void *userp);
 #endif
+
 
 /* json-formatted data publish using libcurl
    return 1 on success; otherwise return 0 */
@@ -61,6 +63,109 @@ int publish_json(char *URL, char *message)
     if (response != CURLE_OK) {
         const char *error_msg = curl_easy_strerror(response);
         log_error("publish(char *, Message) %s", error_msg);
+        return FAILED;
+    }
+
+    curl_easy_cleanup(curl);
+    return SUCCESS;
+}
+
+/* publish a file with given filename and URL 
+   each line is read and combined with the given static string, formatted into json, and sent via libcurl
+   return 1 on success; otherwise return 0 */
+int publish_file(char *URL, char *static_string, char *filename)
+{
+    if (!check_URL(URL) || !check_message(static_string) || !check_message(filename)) {
+        return FAILED;
+    }
+    /*open the file, which contains data for publishing */
+    int i = 0;
+    FILE *fp;
+    char line[256];
+    char *message = calloc(10 * 256, sizeof(char));
+    
+    /* int curl with meaningless message */
+    CURL *curl = prepare_publish(URL, message);
+    if (curl == NULL) {
+        return FAILED;
+    }
+    #ifdef NDEBUG
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_non_data);
+    #endif
+    
+    fp = fopen(filename, "r");
+    if(fp == NULL) {
+        log_error("Could not open file %s\n", filename);
+        return FAILED;
+    }
+
+    /* read the lines in the file and send the message for each 10 lines */
+    while(fgets(line, 256, fp) != NULL) {
+        line[strlen(line) - 1] = '\0';
+        switch(i) {
+            case 0:
+                sprintf(message, "[{%s, %s}", static_string, line);
+                i++;
+                break;
+            case 9:
+                sprintf(message + strlen(message), ",{%s, %s}]", static_string, line);
+                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, message);
+                curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long ) strlen(message));
+                CURLcode response = curl_easy_perform(curl);
+
+                if (response != CURLE_OK) {
+                    const char *error_msg = curl_easy_strerror(response);
+                    log_error("publish(char *, Message) %s", error_msg);
+                    return FAILED;
+                }
+                /* reset i and message for following sending */
+                i = 0;
+                memset(message, '\0', 10*256);
+                break;
+            default:
+                sprintf(message + strlen(message), ",{%s, %s}", static_string, line);
+                i++;
+                break;
+        }
+    }
+    /* send the final few lines in the file */
+    if(i > 0) {
+        strcat(message, "]");
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, message);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long ) strlen(message));
+        CURLcode response = curl_easy_perform(curl);
+
+        if (response != CURLE_OK) {
+            const char *error_msg = curl_easy_strerror(response);
+            log_error("publish(char *, Message) %s", error_msg);
+            return FAILED;
+        }
+    }
+    /* clean the curl handle */
+    curl_easy_cleanup(curl);
+    return SUCCESS;
+}
+
+/* create new experiment for specific application
+   read back the generated experiment_id, after send the msg
+   return 1 on success; otherwise return 0 */
+int create_new_experiment(char *URL, char *message, char *experiment_id)
+{
+    if (!check_URL(URL) || !check_message(message)) {
+        return FAILED;
+    }
+    CURL *curl = prepare_publish(URL, message);
+    if (curl == NULL) {
+        return FAILED;
+    }
+    
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, get_stream_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, experiment_id);
+    CURLcode response = curl_easy_perform(curl);
+
+    if (response != CURLE_OK) {
+        const char *error_msg = curl_easy_strerror(response);
+        log_error("create_new_experiment %s", error_msg);
         return FAILED;
     }
 
@@ -128,3 +233,12 @@ static size_t write_non_data(void *buffer, size_t size, size_t nmemb, void *user
     return size * nmemb;
 }
 #endif
+
+/* Callback function to get stream data during writing */
+static size_t get_stream_data(void *buffer, size_t size, size_t nmemb, void *stream) 
+{
+    size_t total = size * nmemb;
+    memcpy(stream, buffer, total);
+
+    return total;
+}
