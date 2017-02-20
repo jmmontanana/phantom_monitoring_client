@@ -1,6 +1,5 @@
 # Introduction of plugins and usage information
 
-|------------------------------------------------------------------ |
 ## Introduction
 
 The monitoring client is composed of 6 plugins, monitoring all kinds of the system infrastructure-level performance and power metrics. The plugins implemented are based on various libraries, system hardware counters and Linux proc filesystem. In addition to be used by the monitoring client, each plugin can be built as a standalone client, being executed alone with given specific metrics name. 
@@ -16,7 +15,6 @@ More details about each plugin, for example, the plugins' usage, prerequisites a
 - Linux_sys_power
 - NVML
 
-|------------------------------------------------------------------ |
 ## Board_power Plugin
 
 This plugin is based on the external ACME power measurement kit and the libiio library, which is installed during the monitoring client setup process, done automatically by the setup.sh shell script. In case that the ACME power measurement board is not connected with the monitoring client hosted computer or the libiio library is not found, the plugin will fail and report associated error messages.
@@ -64,7 +62,6 @@ Unit and description for each metric is showed in the following table:
 | device0:power   | mW     | power measured for the target board |
 
 
-|------------------------------------------------------------------ |
 ## CPU_perf Plugin
 
 This plugin is based on the PAPI library and associated system hardware counters (PAPI_FP_INS, PAPI_FP_OPS, PAPI_TOT_INS). The PAPI library is installed during the monitoring client setup process, done by the setup.sh shell script. In case that the PAPI library is not found or the associated PAPI counters are not available, the plugin will fail at the initialization stage.
@@ -104,7 +101,6 @@ Unit and description for each metric is showed in the following table:
 | MIPS       | Mip/s    | million instructions per second |
 
 
-|------------------------------------------------------------------ |
 ## CPU_temperature Plugin
 
 This plugin is based on the lm_sensors library which provides tools to and drivers to monitor CPU temperatures and other properties. The lm_sensors library is installed during the monitoring client setup process, done by the setup.sh shell script. In case that the lm_sensors library is not found, the plugin will fail at the initialization stage.
@@ -131,12 +127,11 @@ $ ./mf_CPU_temperature_client <LIST_OF_CPU_temperature_METRICS>
 
 Replace **<LIST_OF_CPU_temperature_METRICS>** with a space-separated list of the following events:
 
-- CPU<i>:core<ii>
+- CPU[i]:core[ii]
 
 , where i represents the CPU socket id, ii identifies which core is the target core of monitoring. The units of all CPU_temperature metrics are degree (°c).
 
 
-|------------------------------------------------------------------ |
 ## Linux_resources Plugin
 
 This plugin is based on the Linux proc filesystem which provides information and statistics about processes and system.
@@ -174,7 +169,6 @@ Unit and description for each metric is showed in the following table:
 | io_throughput   | bytes/s  | total disk read and write bytes per second |
 
 
-|------------------------------------------------------------------ |
 ## Linux_sys_power Plugin
 
 This plugin is based on both the PAPI library (with RAPL component) and the Linux proc filesystem. The PAPI library is installed during the monitoring client setup process, done by the setup.sh shell script. In case that the PAPI library is not found or the RAPL component is not enabled, the plugin will fail at the initialization stage. For accurate power measurement of the system network and disk component, it is advised to adjust the values (E_NET_SND_PER_KB, E_NET_RCV_PER_KB, E_DISK_R_PER_KB, E_DISK_W_PER_KB), as defined in **src/mf_Linux_sys_power_connector.c** according to the network and disk sepcification. To be noticed, the system wired network power consumption is not considered by this plugin.
@@ -218,7 +212,6 @@ Unit and description for each metric is showed in the following table:
 | power_total  | milliwatts | total system power, calculated by the addition of the abover metrics |
 
 
-|------------------------------------------------------------------ |
 ## NVML Plugin
 
 This plugin is based on the nvml (NVIDIA management library), which is a C-based API for monitoring various states of the NVIDIA GPU devices. It is required to use the library **libnvidia-ml.so**, which is installed with the NVIDIA Display Driver, therefore the default library path (/usr/lib64 or /usr/lib) is used to link and build the plugin. During the monitoring setup process, done the setup.sh shell script, the NVIDIA SDK with appropriate header file is installed.
