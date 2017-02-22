@@ -53,36 +53,43 @@ PARAMS=" -a ${APPLICATION_ID} -t ${TASK_ID}"
 #
 # start mf_client
 #
-DATE_1=$(date +"%s%3N")
-echo "Start mf_client at date ${DATE_1} in milliseconds" 
-nohup ${DIST_BIN_DIR}/mf_client ${PARAMS} 2>&1&
+DATE_1=$(date +"%FT%T.%3N")
+echo "Start mf_client at ${DATE_1}" 
+${DIST_BIN_DIR}/mf_client ${PARAMS} 2>&1&
 
 #
 # run the dummy application
 #
 sleep 1
-DATE_2=$(date +"%s%3N")
-echo "Start application at date ${DATE_2} in milliseconds"
+DATE_2=$(date +"%FT%T.%3N")
+echo "Start application at ${DATE_2}"
 
-nohup ${DUMMY_PATH} ${DUMMY_PARAMS}
+${DUMMY_PATH} ${DUMMY_PARAMS} > /dev/null 2>&1
 
-DATE_3=$(date +"%s%3N")
-echo "Application ends at date ${DATE_3} in milliseconds" 
+DATE_3=$(date +"%FT%T.%3N")
+echo "Application ends at ${DATE_3}" 
 sleep 1
 
 #
 # stop mf_client
 #
-DATE_4=$(date +"%s%3N")
-echo "Stop mf_client at date ${DATE_4} in milliseconds" 
+DATE_4=$(date +"%FT%T.%3N")
+echo "Stop mf_client at ${DATE_4}" 
 PID=`ps -ef| grep -v grep | grep mf_client | awk '{print $2}'`
 kill $PID
+
+#
+# wait for the log file is created
+#
+sleep 10
 
 #
 # read from logfile the experiment_id
 #
 EXPERIMENT_ID=`cat ${LOG_DIR}/* | grep experiment_id | awk '{print $6}'`
+echo `cat ${LOG_DIR}/*`
 
+echo ${EXPERIMENT_ID}
 echo "Please try the following query for retrieving monitoring data and statistics:"
 echo " "
 echo "curl -XGET ${MF_SERVER}/v1/mf/profiles/${APPLICATION_ID}/${TASK_ID}/${EXPERIMENT_ID}"
