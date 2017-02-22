@@ -132,8 +132,14 @@ int resources_stat_all_and_calculate(int pid, resources_cpu *before, resources_c
 	fclose(fp);
 
 	/*calculate for the resources_stats */
-	result->CPU_usage_rate = (after->process_CPU_time - before->process_CPU_time) * 100.0 / 
-						(after->global_CPU_time - before->global_CPU_time);
+	if((after->process_CPU_time <= before->process_CPU_time) || (after->global_CPU_time <= before->global_CPU_time)) {
+		result->CPU_usage_rate = 0.0;
+	}
+	else {
+		result->CPU_usage_rate = (after->process_CPU_time - before->process_CPU_time) * 100.0 / 
+						(after->global_CPU_time - before->global_CPU_time);	
+	}
+	
 	result->RAM_usage_rate = pid_VmRSS * 100.0 /MemTotal;
 	result->swap_usage_rate = pid_VmSwap * 100.0 /SwapTotal;
 
