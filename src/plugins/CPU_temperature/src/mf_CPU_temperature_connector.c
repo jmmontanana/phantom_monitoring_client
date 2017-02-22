@@ -173,7 +173,7 @@ void mf_CPU_temperature_to_json(Plugin_metrics *data, char *json)
     /*
      * prepares the json string, including current timestamp, and name of the plugin
      */
-    sprintf(json, "\"plugin\":\"CPU_temperature\"");
+    sprintf(json, "\"type\":\"CPU_temperature\"");
     clock_gettime(CLOCK_REALTIME, &timestamp);
     double ts = timestamp.tv_sec * 1.0e3 + (double)(timestamp.tv_nsec / 1.0e6); // in millisecond
     sprintf(tmp, ",\"local_timestamp\":\"%.1f\"", ts);
