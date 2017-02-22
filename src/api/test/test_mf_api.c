@@ -212,7 +212,7 @@ void Test_resources_and_disk(void)
 	char platform_id[] = "platform_default";
 	char *experiment_id = mf_send(server, application_id, task_id, platform_id);
 	printf("experiment_id : %s\n", experiment_id);
-	free(execution_id);
+	free(experiment_id);
 }
 
 

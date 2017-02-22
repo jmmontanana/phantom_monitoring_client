@@ -25,8 +25,11 @@ METRIC_NAME="CPU_usage_rate"
 #
 # start the application with mf api
 #
-TEST_PATH=`pwd`/../src/api/test
-source ${TEST_PATH}/setenv.sh
+BASE_DIR=`pwd`/..
+TEST_PATH=${BASE_DIR}/src/api/test
+LIB_DIR=${BASE_DIR}/dist/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${LIB_DIR}
+
 ${TEST_PATH}/test_mf_api > demo_b_log.txt
 
 sleep 10
