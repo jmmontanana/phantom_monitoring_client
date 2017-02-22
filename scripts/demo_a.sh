@@ -87,9 +87,7 @@ sleep 10
 # read from logfile the experiment_id
 #
 EXPERIMENT_ID=`cat ${LOG_DIR}/* | grep experiment_id | awk '{print $6}'`
-echo `cat ${LOG_DIR}/*`
 
-echo ${EXPERIMENT_ID}
 echo "Please try the following query for retrieving monitoring data and statistics:"
 echo " "
 echo "curl -XGET ${MF_SERVER}/v1/mf/profiles/${APPLICATION_ID}/${TASK_ID}/${EXPERIMENT_ID}"

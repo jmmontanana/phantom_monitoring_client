@@ -194,7 +194,7 @@ void Test_resources_and_disk(void)
 	strcpy(m_resources.metrics_names[1], "disk_io");
 
 	char *datapath = mf_start(&m_resources);
-	printf("datapath is :%s\n", datapath);
+	printf("datapath : %s\n", datapath);
 	
 	/*do dummy things*/
 	for(i = 0; i < 10; i++) {
@@ -206,12 +206,12 @@ void Test_resources_and_disk(void)
 
 	/* when "dummy" application already exists in database /mf/workflows, 
 	it is possible to send collected metrics to the server */
-	char server[] = "localhost:3030";
-	char application_name[] = "dummy";
-	char task_name[] = "t1";
-	char platform_name[] = "ubuntu";
-	char *execution_id = mf_send(server, application_name, task_name, platform_name);
-	printf("\nexecution_id is %s\n", execution_id);
+	char server[] = "192.168.0.2:3040";
+	char application_id[] = "dummy";
+	char task_id[] = "t2";
+	char platform_id[] = "platform_default";
+	char *experiment_id = mf_send(server, application_id, task_id, platform_id);
+	printf("experiment_id : %s\n", experiment_id);
 	free(execution_id);
 }
 
