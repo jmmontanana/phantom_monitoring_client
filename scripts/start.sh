@@ -34,13 +34,10 @@ LIB_DIR=${DIST_DIR}/lib
 
 PARAMS=''
 
-while getopts "a:e:t:h" opt; do
+while getopts "a:t:h" opt; do
   case $opt in
     a)
       PARAMS+=" -a ${OPTARG}"
-      ;;
-    e)
-      PARAMS+=" -e ${OPTARG}"
       ;;
     t)
       PARAMS+=" -t ${OPTARG}"
