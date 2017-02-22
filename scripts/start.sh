@@ -20,9 +20,8 @@ Usage: $0 [a:e:t:h]
 
 -h                  prints this usage information.
 
--a <APPLICATION_ID> sets a user-defined application ID [optional]
--e <EXPERIMENT_ID>  sets a user-defined experiment ID [optional]
--t <TASK_ID>        sets a user-defined task (component) ID [optional]
+-a <APPLICATION_ID> sets a user-defined application ID [compulsory]
+-t <TASK_ID>        sets a user-defined task (component) ID [compulsory]
 
 EOF
 

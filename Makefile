@@ -77,7 +77,7 @@ INSTALL_LIB_DIR = $(INSTALL_DIR)/lib
 #
 # compile and build
 #
-all: prepare main plugins lib
+all: prepare mf_api main plugins lib
 
 ${SRC}/%.o: %.c ${HEADER}
 	$(CC) -c $< $(COPT_SO)
@@ -88,6 +88,9 @@ excess_concurrent_queue.o:
 prepare:
 	$(MAKE) -C $(PWD)/src/parser DEBUG=$(DEBUG)
 	$(MAKE) -C $(PWD)/src/publisher DEBUG=$(DEBUG)
+mf_api:
+	$(MAKE) -C $(PWD)/src/api DEBUG=$(DEBUG)
+	$(MAKE) -C $(PWD)/src/api/test DEBUG=$(DEBUG)
 
 main: excess_concurrent_queue.o $(SRC)/main.o $(SRC)/thread_handler.o $(SRC)/plugin_discover.o $(SRC)/plugin_manager.o
 	$(CXX) -o $@ $^ -lrt -ldl -Wl,--export-dynamic $(CFLAGS) $(LFLAGS)
@@ -113,6 +116,8 @@ clean:
 	rm -f $(PWD)/main
 	$(MAKE) -C $(PWD)/src/parser clean
 	$(MAKE) -C $(PWD)/src/publisher clean
+	$(MAKE) -C $(PWD)/src/api clean
+	$(MAKE) -C $(PWD)/src/api/test clean
 	$(MAKE) -C $(PLUGIN_DIR)/Board_power clean
 	$(MAKE) -C $(PLUGIN_DIR)/CPU_perf clean
 	$(MAKE) -C $(PLUGIN_DIR)/CPU_temperature clean
@@ -156,3 +161,4 @@ copy_libs:
 	cp -f $(PWD)/bin/sensors/lib/lib*.so* $(INSTALL_LIB_DIR)
 	cp -f $(PWD)/src/parser/lib*.so* $(INSTALL_LIB_DIR)
 	cp -f $(PWD)/src/publisher/lib*.so* $(INSTALL_LIB_DIR)
+	cp -f $(PWD)/src/api/lib*.so* $(INSTALL_LIB_DIR)

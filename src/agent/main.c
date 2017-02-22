@@ -259,11 +259,12 @@ int prepare(void)
 		application_id, task_id, platform_id);
 	sprintf(experiments_URL, "%s/mf/experiments/%s", server_name, application_id); //server maybe localhost:3030
 
-	create_new_experiment(URL, msg, experiment_id);
+	create_new_experiment(experiments_URL, msg, experiment_id);
 	if(experiment_id[0] == '\0') {
 		log_error("Cannot create new experiment for application %s\n", application_id);
 		return FAILURE;
 	}
+	log_info("> experiment_id : %s\n", experiment_id);
 
 	return SUCCESS;
 }
