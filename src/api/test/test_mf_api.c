@@ -178,6 +178,30 @@ void Test_disk_monitor(void)
 
 	mf_end();
 }
+/*******************************************************************************
+ * power_monitor test
+ ******************************************************************************/
+void Test_CPU_power_read(void)
+{
+	char c;
+	int pid = getpid();
+
+	cpu_info current;
+	cpu_info_read(pid, &current);
+	
+	float sys_energy = cpu_freq_stat();
+	printf("sys_energy is: %f Joule\tsys_runtime is: %llu\tsys_itv is: %llu\n", 
+		sys_energy, 
+		current.sys_runtime,
+		current.sys_itv);
+	printf("process %d runtime is : %llu\n", 
+		pid, 
+		current.pid_runtime);
+	
+	/*wait for check*/
+	scanf("%c", &c);
+}
+
 
 /*******************************************************************************
  * resources and disk monitor test 
@@ -228,7 +252,9 @@ int main(void)
 	//Test_disk_monitor();		//only disk monitoring
 
 	/* test mf interfaces: mf_start, mf_end, mf_send */	
-	Test_resources_and_disk();	//both resources and disk monitoring
+	//Test_resources_and_disk();	//both resources and disk monitoring
+
+	Test_CPU_power_read();
 
 	return 0;
 }
