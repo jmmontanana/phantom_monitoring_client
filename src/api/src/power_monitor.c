@@ -5,23 +5,11 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <time.h>
+#include <asm/unistd.h>
+#include <linux/perf_event.h>
+#include <linux/hw_breakpoint.h>
 #include "power_monitor.h"
 #include "mf_api.h"
-
-
-/* Specifications */
-/*
- **********************************************************************
- CPU: in my laptop
-   - 800MHZ: 6W
-   - 2.Ghz: 24.5W
- **********************************************************************
- */
-float maxcpupower = 24.5;	// in Watts
-float mincpupower = 6.0;	// in Watts
-
-unsigned long long freqs[16];
-unsigned long long oldfreqs[16];
 
 int power_monitor(int pid, char *DataPath, long sampling_interval)
 {
@@ -35,12 +23,16 @@ int power_monitor(int pid, char *DataPath, long sampling_interval)
 	}
 	struct timespec timestamp_before, timestamp_after;
 	double timestamp_ms;
-	float sys_energy, sys_power, pid_power;
-	float duration;
-	cpu_info cpu_before, cpu_after;
+	float duration, sys_cpu_power, pid_cpu_power, pid_mem_power, pid_disk_power;
+	
+	pid_stats_info before, after, delta;
 
-	cpu_info_read(pid, &cpu_before);
-	sys_energy = cpu_freq_stat();
+	int fd = create_perf_stat_counter(pid);
+	if(fd <= 0)
+		exit(0);
+
+	if(read_and_check(fd, pid, &before) <= 0)
+		exit(0);
 
 	/*in a loop do data sampling and write into the file*/
 	while(running) {
@@ -48,71 +40,176 @@ int power_monitor(int pid, char *DataPath, long sampling_interval)
 		clock_gettime(CLOCK_REALTIME, &timestamp_before);
     	
 		usleep(sampling_interval * 1000);
-		cpu_info_read(pid, &cpu_after);
-		sys_energy = cpu_freq_stat();
 		
+		if(read_and_check(fd, pid, &after) <= 0)
+			exit(0);
+	
 		/*get after timestamp in ms*/
 		clock_gettime(CLOCK_REALTIME, &timestamp_after);
 
-		/*calculate the avg power during the interval */
-		if(sys_energy > 0) {
-			duration = timestamp_after.tv_sec - timestamp_before.tv_sec + ((timestamp_after.tv_nsec - timestamp_before.tv_nsec) / 1.0e9);
-			sys_power = sys_energy * (cpu_after.sys_runtime - cpu_before.sys_runtime) * 100 * 1.0e3 / 
-				((cpu_after.sys_itv - cpu_before.sys_itv) * duration); //in milliwatt
-
-			pid_power = sys_power * (cpu_after.pid_runtime - cpu_before.pid_runtime) * 100 /
-				(cpu_after.sys_runtime - cpu_before.sys_runtime);	//propotional to the process's cpu usage rate
-
-	    	timestamp_ms = timestamp_after.tv_sec * 1000.0  + (double)(timestamp_after.tv_nsec / 1.0e6);
-    		fprintf(fp, "\"local_timestamp\":\"%.1f\", \"%s\":%.3f, \"%s\":%.3f\n", timestamp_ms, 
-    			"total_CPU_power", sys_power,
-    			"process_CPU_power", pid_power);	
-			}
-		else
+		/*calculate the increments of counters; update the values before and after */
+		if(calcualte_and_update(&before, &after, &delta) <= 0)
 			continue;
-		}
+
+		/* calculate the time interval in seconds */
+		duration = timestamp_after.tv_sec - timestamp_before.tv_sec + ((timestamp_after.tv_nsec - timestamp_before.tv_nsec) / 1.0e9);
+		/* system-wide cpu power in milliwatt */
+		sys_cpu_power = delta.sys_cpu_energy * delta.sys_runtime * 1.0e5 / (delta.sys_itv * duration);
+		/* pid-based cpu power in milliwatt */
+		pid_cpu_power = sys_cpu_power * delta.pid_runtime * 100 / delta.sys_runtime;
+		/* pid-based memory access power in milliwatt */
+		pid_mem_power = ((delta.pid_read_bytes + delta.pid_write_bytes - delta.pid_cancelled_writes) / L2CACHE_LINE_SIZE + delta.pid_l2_cache_misses) *
+						L2CACHE_MISS_LATENCY * MEMORY_POWER * 1.0e-6 / duration;
+		/* pid-based disk access power in milliwatt */
+		pid_disk_power = (delta.pid_read_bytes * EDISKRPERKB + (delta.pid_write_bytes - delta.pid_cancelled_writes) * EDISKWPERKB) * 1.0e-3 / 
+						1024 * duration;
+
+		timestamp_ms = timestamp_after.tv_sec * 1000.0  + (double)(timestamp_after.tv_nsec / 1.0e6);
+			
+    	fprintf(fp, "\"local_timestamp\":\"%.1f\", \"%s\":%.3f, \"%s\":%.3f, \"%s\":%.3f, \"%s\":%.3f\n", timestamp_ms, 
+    			"total_CPU_power", sys_cpu_power,
+    			"process_CPU_power", pid_cpu_power,
+    			"process_mem_power", pid_mem_power,
+    			"process_disk_power", pid_disk_power);
+	}
 	/*close the file*/
 	fclose(fp);
 	return 1;
 }
 
-/* read the system total time, system runtime, and process runtime */
-int cpu_info_read(int pid, cpu_info *info)
+/* init perf counter for hardware cache misses 
+   return the file descriptor for further read operations */
+int create_perf_stat_counter(int pid)
+{
+	struct perf_event_attr attr; //cache miss
+	memset(&attr, 0, sizeof(struct perf_event_attr));
+	attr.type =	PERF_TYPE_HARDWARE; 
+  	attr.config = PERF_COUNT_HW_CACHE_MISSES;
+  	attr.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING;
+  	attr.inherit = 1;
+  	attr.disabled = 0;
+	attr.enable_on_exec = 1;
+	attr.size = sizeof(attr);
+	
+	/* This measures the specified process/thread on any CPU;
+	   return the file descriptor for the counter */
+	
+	return syscall(__NR_perf_event_open, &attr, pid, -1, -1, 0);
+}
+
+/* read from /proc filesystem all statistics;
+   get the cpu energy consumption based on cpu freq statistics;
+   read from perf counter the hardware cache misses */
+int read_and_check(int fd, int pid, pid_stats_info *info) 
+{
+	if(read_pid_time(pid, info) <= 0)
+		return 0;
+
+	if(read_pid_io(pid, info) <=0 )
+		return 0;
+	
+	if(read_sys_time(info) <= 0)
+		return 0;
+	
+	if(cpu_freq_stat(info) <= 0)
+		return 0;
+	
+	info->pid_l2_cache_misses = read_perf_counter(fd);
+	if(info->pid_l2_cache_misses <= 0)
+		return 0;
+
+	return 1;
+}
+
+/* check if values are increasing; calculate the differences in the time interval; update the before values with after values */
+int calcualte_and_update(pid_stats_info *before, pid_stats_info *after, pid_stats_info *delta)
+{
+	if (after->sys_itv <= before->sys_itv)
+		return 0;
+	if (after->sys_runtime <= before->sys_runtime)
+		return 0;
+
+	delta->sys_itv = after->sys_itv - before->sys_itv;
+	delta->sys_runtime = after->sys_runtime - before->sys_runtime;
+	delta->pid_runtime = after->pid_runtime - before->pid_runtime;
+	delta->pid_read_bytes = after->pid_read_bytes - before->pid_read_bytes;
+	delta->pid_write_bytes = after->pid_write_bytes - before->pid_write_bytes;
+	delta->pid_cancelled_writes = after->pid_cancelled_writes - before->pid_cancelled_writes;
+	delta->pid_l2_cache_misses = after->pid_l2_cache_misses - before->pid_l2_cache_misses;
+	delta->sys_cpu_energy = after->sys_cpu_energy - before->sys_cpu_energy;
+
+	memcpy(&before, &after, sizeof(pid_stats_info));
+	return 1;
+}
+
+/* read the process runtime from /proc/[pid]/stat */
+int read_pid_time(int pid, pid_stats_info *info)
 {
 	FILE *fp;
 	char line[1024];
-	unsigned long long tmp;
-
-	/*
-	  read the process runtime from /proc/[pid]/stat 
-	 */
 	char pid_cpu_file[128] = {'\0'};
-	unsigned long long pid_utime, pid_stime;
+	char tmp_str[32];
+	char tmp_char;
+	unsigned long long tmp, pid_utime, pid_stime;	
 
 	sprintf(pid_cpu_file, "/proc/%d/stat", pid);
 	fp = fopen(pid_cpu_file, "r");
+
 	if(fp == NULL) {
 		printf("ERROR: Could not open file %s\n", pid_cpu_file);
 		return 0;
 	}
-	char tmp_str[32];
-	char tmp_char;
 	if(fgets(line, 1024, fp) != NULL) {
 		sscanf(line, "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu",
 			(int *)&tmp, tmp_str, &tmp_char, (int *)&tmp, (int *)&tmp, (int *)&tmp, (int *)&tmp, (int *)&tmp, 
 			(unsigned int *)&tmp, (unsigned long *)&tmp, (unsigned long *)&tmp, (unsigned long *)&tmp, 
 			(unsigned long *)&tmp, (unsigned long *)&pid_utime, (unsigned long *)&pid_stime);
 	}
+
 	info->pid_runtime = pid_utime + pid_stime;
 	fclose(fp);
+	return 1;
+}
 
-	/* 
-	  read the system itv and runtime 
-	 */
+/* read the process read_bytes, write_bytes, and cancelled_writes from /proc/[pid]/io */
+int read_pid_io(int pid, pid_stats_info *info)
+{
+	FILE *fp;
+	char line[128];
+	char disk_file[128] = {'\0'};
+
+	sprintf(disk_file, "/proc/%d/io", pid);
+	fp = fopen(disk_file, "r");
+	
+	if(fp == NULL) {
+		printf("ERROR: Could not open file %s\n", disk_file);
+		return 0;
+	}
+	while (fgets(line, 128, fp) != NULL) {
+		if (!strncmp(line, "read_bytes:", 11)) {
+			sscanf(line + 12, "%llu", &info->pid_read_bytes);
+		}
+		else if (!strncmp(line, "write_bytes:", 12)) {
+			sscanf(line + 13, "%llu", &info->pid_write_bytes);
+		}
+		else if (!strncmp(line, "cancelled_write_bytes:", 22)) {
+			sscanf(line + 23, "%llu", &info->pid_cancelled_writes);
+		}
+	}
+	fclose(fp);
+	return 1;
+}
+
+/* read the system itv and runtime from /proc/stat*/
+int read_sys_time(pid_stats_info *info)
+{
+	FILE *fp;
+	char line[128];
 	char cpu_file[128] = "/proc/stat";
 	unsigned long long cpu_user, cpu_nice, cpu_sys, cpu_idle, cpu_iowait, cpu_hardirq, cpu_softirq, cpu_steal;
 
 	fp = fopen(cpu_file, "r");
+
 	if(fp == NULL) {
 		printf("ERROR: Could not open file %s\n", cpu_file);
 		return 0;
@@ -135,73 +232,89 @@ int cpu_info_read(int pid, cpu_info *info)
 }
 
 /* get the cpu freq counting and return the cpu energy since the last call of the function */
-float cpu_freq_stat(void) 
+int cpu_freq_stat(pid_stats_info *info) 
 {
 	/* 
 	  read the system cpu energy based on given max- and min- cpu energy, and frequencies statistics 
 	 */
 	FILE *fp;
-	char line[32];
+	char line[32] = {'\0'};
 	DIR *dir;
 	int i, max_i;
 	struct dirent *dirent;
 	char cpu_freq_file[128] = {'\0'};
-	float power_range = max_cpu_power - min_cpu_power;
-	float energy_delta, energy_total;
+	
+	float energy_each, energy_total;
 	unsigned long long tmp;
+	unsigned long long freqs[16];
 
 	/* 
 	  check if system support cpu freq counting 
 	 */
 	fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state", "r");
-	if(!fp) {
-		return 0.0;
+	if(fp == NULL) {
+		printf("ERROR: CPU frequency statistics are not supported.\n");
+		return 0;
 	}
 
-	/* 
-	  reset the freq counters
-	 */
 	energy_total = 0.0;
-	memcpy(&oldfreqs, &freqs, sizeof(freqs));
-	for (i = 0; i<16; i++)
-			freqs[i] = 0;
+	float power_range = MAX_CPU_POWER - MIN_CPU_POWER;
 
 	dir = opendir("/sys/devices/system/cpu");
-	if(!dir)
-		return 0.0;
+	if(!dir) {
+		printf("ERROR: Could not open directory /sys/devices/system/cpu\n");
+		return 0;
+	}
+
 	while ((dirent = readdir(dir))) {
 		/* for each entry name starting by cpuxx */
 		if (strncmp(dirent->d_name,"cpu", 3) != 0)
 			continue;
 		sprintf(cpu_freq_file, "/sys/devices/system/cpu/%s/cpufreq/stats/time_in_state", dirent->d_name);
 		fp = fopen(cpu_freq_file, "r");
+
 		if(!fp)
 			continue;
-		memset(line, 0, 32);
-		int i = 0;
-		while (!feof(fp)) {
+
+		for (i = 0; !feof(fp) && (i <= 15); i++) {
 			if(fgets(line, 32, fp) == NULL)
 				break;
 			sscanf(line, "%llu %llu", &tmp, &freqs[i]);
 			/* each line has a pair like "<frequency> <time>", which means this CPU spent <time> usertime at <frequency>.
-			  unit of <time> is 10ms
+			   unit of <time> is 10ms
 			 */
-			i++;
-			if (i>15)
-				break;
 		}
+
 		max_i = i - 1;
 		fclose(fp);
+
+		for (i = 0; i <= max_i; i++) {
+			energy_each = (MAX_CPU_POWER - power_range * i / max_i) * freqs[i] / 100.0; // in Joule
+			energy_total += energy_each; 
+		}	
 	}
 
 	closedir(dir);
-	for (i = 0; i <= max_i; i++) {
-		tmp = freqs[i] - oldfreqs[i];
-		if(tmp <= 0)
-			continue;
-		energy_delta = (max_cpu_power - power_range * i / max_i) * tmp / 100.0; // in Joule
-		energy_total += energy_delta; 
-	}
 
-	return energy_total;
+	info->sys_cpu_energy = energy_total;
+	return 1;
+}
+
+/* read the perf counter from the file descriptor */
+unsigned long long read_perf_counter(int fd)
+{
+	unsigned long long single_count[3];
+	size_t res;
+
+	if (fd <= 0)
+		return 0;
+
+	res = read(fd, single_count, 3 * sizeof(unsigned long long));
+
+	if(res == 3 * sizeof(unsigned long long)) {
+		return single_count[0];
+	}
+	else {
+		return 0;
+	}
 }

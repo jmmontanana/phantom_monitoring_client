@@ -186,22 +186,83 @@ void Test_CPU_power_read(void)
 	char c;
 	int pid = getpid();
 
-	cpu_info current;
-	cpu_info_read(pid, &current);
+	pid_stats_info before, after;
 	
-	float sys_energy = cpu_freq_stat();
-	printf("sys_energy is: %f Joule\tsys_runtime is: %llu\tsys_itv is: %llu\n", 
-		sys_energy, 
-		current.sys_runtime,
-		current.sys_itv);
-	printf("process %d runtime is : %llu\n", 
-		pid, 
-		current.pid_runtime);
+	memset(&before, 0, sizeof(pid_stats_info));
+	memset(&after, 0, sizeof(pid_stats_info));
+
+	if(read_pid_time(pid, &before) <= 0)
+		printf("ERROR: read_pid_time failed!\n");
+
+	if(read_sys_time(&before) <= 0)
+		printf("ERROR: read_sys_time failed!\n");
+
+	if(cpu_freq_stat(&before) <= 0)
+		printf("ERROR: cpu_freq_stat failed!\n");
+
+	dummy();
+
+	if(read_pid_time(pid, &after) <= 0)
+		printf("ERROR: read_pid_time failed!\n");
+
+	if(read_sys_time(&after) <= 0)
+		printf("ERROR: read_sys_time failed!\n");
+
+	if(cpu_freq_stat(&after) <= 0)
+		printf("ERROR: cpu_freq_stat failed!\n");
+
+	printf("values read for process %d are:\n", pid);
+	printf("system total time: %llu\n", (after.sys_itv - before.sys_itv));
+	printf("system runtime:    %llu\n", (after.sys_runtime - before.sys_runtime));
+	printf("process runtime:   %llu\n", (after.pid_runtime - before.pid_runtime));
+	printf("system cpu energy: %f\n", (after.sys_cpu_energy - before.sys_cpu_energy));
 	
 	/*wait for check*/
 	scanf("%c", &c);
 }
 
+void Test_mem_power_read(void)
+{
+	char c;
+	int pid = getpid();
+
+	int fd = create_perf_stat_counter(pid);
+	unsigned long long before = read_perf_counter(fd);
+
+	dummy();
+
+	unsigned long long after = read_perf_counter(fd);
+	printf("values read for process %d are:\n", pid);
+	printf("L2 cache misses: %llu\n", (after - before));
+
+	scanf("%c", &c);
+}
+
+void Test_disk_power_read(void)
+{
+	char c;
+	int pid = getpid();
+
+	pid_stats_info before, after;
+
+	memset(&before, 0, sizeof(pid_stats_info));
+	memset(&after, 0, sizeof(pid_stats_info));
+
+	if(read_pid_io(pid, &before) <= 0)
+		printf("ERROR: read_pid_io failed!\n");
+
+	dummy();
+
+	if(read_pid_io(pid, &after) <= 0)
+		printf("ERROR: read_pid_io failed!\n");
+
+	printf("values read for process %d are:\n", pid);
+	printf("process read bytes:       %llu\n", (after.pid_read_bytes - before.pid_read_bytes));
+	printf("process write bytes:      %llu\n", (after.pid_write_bytes - before.pid_write_bytes));
+	printf("process cancelled writes: %llu\n", (after.pid_cancelled_writes - before.pid_cancelled_writes));
+
+	scanf("%c", &c);
+}
 
 /*******************************************************************************
  * resources and disk monitor test 
@@ -255,6 +316,8 @@ int main(void)
 	//Test_resources_and_disk();	//both resources and disk monitoring
 
 	Test_CPU_power_read();
+	Test_mem_power_read();
+	Test_disk_power_read();
 
 	return 0;
 }
