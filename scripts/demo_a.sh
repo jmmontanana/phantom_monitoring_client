@@ -20,7 +20,7 @@
 APPLICATION_ID="dummy"
 TASK_ID="t1"
 MF_SERVER="192.168.0.2:3040"
-METRIC_NAME="CPU_usage_rate"
+METRIC_NAME="power_total"
 
 #
 # dummy application path and script
@@ -81,7 +81,7 @@ kill $PID
 #
 # wait for the log file is created
 #
-sleep 10
+sleep 20
 
 #
 # read from logfile the experiment_id
