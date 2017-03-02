@@ -113,7 +113,7 @@ void Test_resources_monitor(void)
 	m_resources.sampling_interval[0] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[0], "resources_usage");
 
-	char server[] = "localhost:3040";
+	char server[] = "192.168.0.2:3040";
 	char platform_id[] = "ubuntu";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
@@ -172,7 +172,7 @@ void Test_disk_monitor(void)
 	m_resources.sampling_interval[0] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[0], "disk_io");
 	
-	char server[] = "localhost:3040";
+	char server[] = "192.168.0.2:3040";
 	char platform_id[] = "ubuntu";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
@@ -289,7 +289,7 @@ void Test_resources_and_disk(void)
 	m_resources.sampling_interval[1] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[1], "disk_io");
 
-	char server[] = "localhost:3040";
+	char server[] = "192.168.0.2:3040";
 	char platform_id[] = "ubuntu";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
@@ -334,8 +334,8 @@ int main(void)
 	//Test_disk_stats_read();
 
 	/* test mf interfaces: mf_start, mf_end */
-	Test_resources_monitor(); 	//only resources monitoring 
-	Test_disk_monitor();		//only disk monitoring
+	//Test_resources_monitor(); 	//only resources monitoring 
+	//Test_disk_monitor();		//only disk monitoring
 
 	/* test mf interfaces: mf_start, mf_end, mf_send */	
 	Test_resources_and_disk();	//both resources and disk monitoring

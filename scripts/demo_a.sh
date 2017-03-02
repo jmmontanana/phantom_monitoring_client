@@ -81,7 +81,7 @@ kill $PID
 #
 # wait for the log file is created
 #
-sleep 20
+sleep 30
 
 #
 # read from logfile the experiment_id
