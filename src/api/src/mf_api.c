@@ -22,6 +22,12 @@ typedef struct each_metric_t {
 } each_metric;
 
 int running;
+char parameters_name[9][32] = {"MAX_CPU_POWER", "MIN_CPU_POWER", 
+	                           "MEMORY_POWER", "L2CACHE_MISS_LATENCY", "L2CACHE_LINE_SIZE", 
+	                           "E_DISK_R_PER_KB", "E_DISK_W_PER_KB", 
+	                           "E_NET_SND_PER_KB", "E_NET_RCV_PER_KB"};
+float parameters_value[9];
+
 char DataPath[256];
 pthread_t threads[MAX_NUM_METRICS];
 int num_threads;
@@ -34,16 +40,23 @@ FILE *logFile;
  ******************************************************************************/
 static int api_prepare(char *Data_path);
 static void *MonitorStart(void *arg);
+int get_config_parameters(char *server, char *platform_id);
 
 /*
 Get the pid, and setup the DataPath for data storage 
 For each metric, create a thread, open a file for data storage, and start sampling the metrics periodically.
 Return the path of data files
 */
-char *mf_start(metrics *m)
+char *mf_start(char *server, char *platform_id, metrics *m)
 {
 	/* get pid and setup the DataPath according to pid */
     pid = api_prepare(DataPath);
+
+    /* get parameters from server with given platform_id */
+    if(get_config_parameters(server, platform_id) <= 0) {
+    	printf("ERROR : get_config_parameters failed.\n");
+    	return NULL;
+    }
 
 	num_threads = m->num_metrics;
 	int t;
@@ -198,4 +211,49 @@ static void *MonitorStart(void *arg) {
 		return NULL;
 	}
 	return NULL;
+}
+
+int get_config_parameters(char *server, char *platform_id)
+{
+	/* send the query and retrieve the response string */
+	char *URL = calloc(256, sizeof(char));
+	char *response_str = calloc(256, sizeof(char));
+
+	sprintf(URL, "%s/v1/mf/configs/%s", server, platform_id);
+	if(query_json(URL, response_str) <= 0) {
+		printf("ERROR: query with %s failed.\n", URL);
+		return 0;
+	}
+	if(strstr(response_str, "parameters") == NULL) {
+		printf("ERROR: response does not include parameters.\n");
+		return 0;
+	}
+
+	/* parse the send back string to get required parameters */
+	char *ptr_begin, *ptr_end;
+	char value[16] = {'\0'};
+	int i, value_length;
+	for (i = 0; i <= 8; i++) {
+		ptr_begin = strstr(response_str, parameters_name[i]);
+		if(ptr_begin != NULL) {
+			ptr_end = strstr(ptr_begin, ",");
+			if(ptr_end == NULL) {
+				ptr_end = strstr(ptr_begin, "}");
+				if(ptr_end == NULL)
+					return 0;
+			}
+			value_length = ptr_end - ptr_begin - 4 - strlen(parameters_name[i]);
+			ptr_begin += 3 + strlen(parameters_name[i]);
+			memset(value, '\0', 16);
+			strncpy(value, ptr_begin, value_length);
+			parameters_value[i] = atof(value);
+		}
+	}
+	/*
+	printf("parameters are:\n");
+	for (i = 0; i <= 8; i++) {
+		printf("%s:%f\n", parameters_name[i], parameters_value[i]);
+	}
+	*/
+	return 1;
 }

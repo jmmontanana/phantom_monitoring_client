@@ -5,6 +5,7 @@
 #define MAX_NUM_METRICS      3
 #define NAME_LENGTH          32
 
+
 typedef struct metrics_t {
 	long sampling_interval[MAX_NUM_METRICS];	//in milliseconds
 	char metrics_names[MAX_NUM_METRICS][NAME_LENGTH];		//user defined metrics
@@ -12,12 +13,15 @@ typedef struct metrics_t {
 } metrics;
 
 extern int running;
+extern char parameters_name[9][32];
+extern float parameters_value[9];
+
 /* 
 Get the pid, and setup the DataPath for data storage 
 For each metric, create a thread, open a file for data storage, and start sampling the metrics periodically.
 Return the path of data files
 */
-char *mf_start(metrics *m);
+char *mf_start(char *server, char *platform_id, metrics *m);
 
 /*
 Stop threads.

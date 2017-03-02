@@ -58,10 +58,10 @@ int power_monitor(int pid, char *DataPath, long sampling_interval)
 		/* pid-based cpu power in milliwatt */
 		pid_cpu_power = sys_cpu_power * delta.pid_runtime * 100 / delta.sys_runtime;
 		/* pid-based memory access power in milliwatt */
-		pid_mem_power = ((delta.pid_read_bytes + delta.pid_write_bytes - delta.pid_cancelled_writes) / L2CACHE_LINE_SIZE + delta.pid_l2_cache_misses) *
-						L2CACHE_MISS_LATENCY * MEMORY_POWER * 1.0e-6 / duration;
+		pid_mem_power = ((delta.pid_read_bytes + delta.pid_write_bytes - delta.pid_cancelled_writes) / parameters_value[4] + delta.pid_l2_cache_misses) *
+						parameters_value[3] * parameters_value[2] * 1.0e-6 / duration;
 		/* pid-based disk access power in milliwatt */
-		pid_disk_power = (delta.pid_read_bytes * EDISKRPERKB + (delta.pid_write_bytes - delta.pid_cancelled_writes) * EDISKWPERKB) * 1.0e-3 / 
+		pid_disk_power = (delta.pid_read_bytes * parameters_value[5] + (delta.pid_write_bytes - delta.pid_cancelled_writes) * parameters_value[6]) * 1.0e-3 / 
 						1024 * duration;
 
 		timestamp_ms = timestamp_after.tv_sec * 1000.0  + (double)(timestamp_after.tv_nsec / 1.0e6);
@@ -248,6 +248,9 @@ int cpu_freq_stat(pid_stats_info *info)
 	unsigned long long tmp;
 	unsigned long long freqs[16];
 
+	printf("MAX_CPU_POWER: %f\n", parameters_value[0]);
+	printf("MIN_CPU_POWER: %f\n", parameters_value[1]);
+	
 	/* 
 	  check if system support cpu freq counting 
 	 */
@@ -258,7 +261,7 @@ int cpu_freq_stat(pid_stats_info *info)
 	}
 
 	energy_total = 0.0;
-	float power_range = MAX_CPU_POWER - MIN_CPU_POWER;
+	float power_range = parameters_value[0] - parameters_value[1];
 
 	dir = opendir("/sys/devices/system/cpu");
 	if(!dir) {
@@ -289,7 +292,7 @@ int cpu_freq_stat(pid_stats_info *info)
 		fclose(fp);
 
 		for (i = 0; i <= max_i; i++) {
-			energy_each = (MAX_CPU_POWER - power_range * i / max_i) * freqs[i] / 100.0; // in Joule
+			energy_each = (parameters_value[0] - power_range * i / max_i) * freqs[i] / 100.0; // in Joule
 			energy_total += energy_each; 
 		}	
 	}

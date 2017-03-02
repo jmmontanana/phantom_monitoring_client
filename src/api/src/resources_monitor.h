@@ -14,7 +14,6 @@ typedef struct resources_cpu_t {
 	unsigned long long global_CPU_time;
 } resources_cpu;
 
-
 int resources_monitor(int pid, char *DataPath, long sampling_interval);
 int resources_stat_cpu(int pid, resources_cpu *stats_now);
 int resources_stat_all_and_calculate(int pid, resources_cpu *before, resources_cpu *after, resources_stats *result);

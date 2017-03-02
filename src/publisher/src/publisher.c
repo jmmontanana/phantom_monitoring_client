@@ -35,12 +35,43 @@ int check_URL(char *URL);
 int check_message(char *message);
 void init_curl(void);
 CURL *prepare_publish(char *URL, char *message);
-static size_t get_stream_data(void *buffer, size_t size, size_t nmemb, void *stream);
+CURL *prepare_query(char* URL);
+static size_t get_stream_data(void *buffer, size_t size, size_t nmemb, char *stream);
 
 #ifdef NDEBUG
 static size_t write_non_data(void *buffer, size_t size, size_t nmemb, void *userp);
 #endif
 
+/* send query to the given URL, read back the response string
+   return 1 on success; otherwise return 0 */
+int query_json(char *URL, char *response_str)
+{
+    if (!check_URL(URL)) {
+        return FAILED;
+    }
+
+    CURL *curl = prepare_query(URL);
+    if (curl == NULL) {
+        return FAILED;
+    }
+    
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, get_stream_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, response_str);
+    CURLcode response = curl_easy_perform(curl);
+
+    if (response != CURLE_OK) {
+        const char *error_msg = curl_easy_strerror(response);
+        log_error("create_new_experiment %s", error_msg);
+        return FAILED;
+    }
+
+    curl_easy_cleanup(curl);
+
+    if(response_str == NULL) {
+        return FAILED;
+    }
+    return SUCCESS;
+}
 
 /* json-formatted data publish using libcurl
    return 1 on success; otherwise return 0 */
@@ -226,6 +257,20 @@ CURL *prepare_publish(char *URL, char *message)
     return curl;
 }
 
+/* Prepare for using libcurl to read */
+CURL *prepare_query(char* URL)
+{
+    init_curl();
+    CURL *curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_URL, URL);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    #ifdef DEBUG
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    #endif
+
+    return curl;
+}
+
 /* Callback function for writing with libcurl */
 #ifdef NDEBUG
 static size_t write_non_data(void *buffer, size_t size, size_t nmemb, void *userp)
@@ -235,10 +280,17 @@ static size_t write_non_data(void *buffer, size_t size, size_t nmemb, void *user
 #endif
 
 /* Callback function to get stream data during writing */
-static size_t get_stream_data(void *buffer, size_t size, size_t nmemb, void *stream) 
+static size_t get_stream_data(void *buffer, size_t size, size_t nmemb, char *stream) 
 {
     size_t total = size * nmemb;
+    /* re-allocate string length */
+    stream = realloc(stream, total + 1);
+    if(stream == NULL) {
+        return 0;
+    }
+
     memcpy(stream, buffer, total);
+    stream[total] = '\0';
 
     return total;
 }

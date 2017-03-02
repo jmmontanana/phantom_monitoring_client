@@ -5,9 +5,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <time.h>
-#include "resources_monitor.h"
-#include "disk_monitor.h"
-#include "power_monitor.h"
+//#include "resources_monitor.h"
+//#include "disk_monitor.h"
+//#include "power_monitor.h"
 #include "mf_api.h"
 
 #define SAMPLE_INTERVAL 500
@@ -47,6 +47,7 @@ void dummy(void)
  * resources_monitor test
  ******************************************************************************/
 /* test resources_stat_cpu */
+/*
 void Test_resources_stat_cpu(void)
 {
 	int pid = getpid();
@@ -56,12 +57,13 @@ void Test_resources_stat_cpu(void)
 		pid, 
 		cpu_stats_now.process_CPU_time, 
 		cpu_stats_now.global_CPU_time);
-	/*wait for check*/
+	//wait for check
 	char c;
 	scanf("%c", &c);
-}
+}*/
 
 /* test resources_stat_all_and_calculate */
+/*
 void Test_resources_stat_all_and_calculate(void)
 {
 	char c;
@@ -69,37 +71,38 @@ void Test_resources_stat_all_and_calculate(void)
 	resources_stats cpu_stats;
 	resources_cpu cpu_stats_before, cpu_stats_after;
 
-	/*stats the current cpu time of the process and of the whole system */
+	//stats the current cpu time of the process and of the whole system
 	resources_stat_cpu(pid, &cpu_stats_before);
 	printf("process %d\n\tprocess_CPU_time ---%llu\n\tglobal_CPU_time ---%llu\n", 
 		pid, 
 		cpu_stats_before.process_CPU_time, 
 		cpu_stats_before.global_CPU_time);
-	/*wait for check*/
+	//wait for check
 	scanf("%c", &c);
 	
-	/*do some dummy calculation */
+	//do some dummy calculation 
 	dummy();
 
-	/*stats the current cpu time of the process and of the whole system */
+	//stats the current cpu time of the process and of the whole system
 	resources_stat_cpu(pid, &cpu_stats_after);
 	printf("process %d\n\tprocess_CPU_time ---%llu\n\tglobal_CPU_time ---%llu\n", 
 		pid, 
 		cpu_stats_after.process_CPU_time, 
 		cpu_stats_after.global_CPU_time);
-	/*wait for check*/
+	//wait for check
 	scanf("%c", &c);
 
-	/*do stats of ram and swap and calculate the cpu_usage_rate for the duration */
+	//do stats of ram and swap and calculate the cpu_usage_rate for the duration
 	resources_stat_all_and_calculate(pid, &cpu_stats_before, &cpu_stats_after, &cpu_stats);
 	printf("process %d\n\tCPU_usage_rate ---%.3f\n\tRAM_usage_rate ---%.3f\n\tswap_usage_rate ---%.3f\n",
 		pid,
 		cpu_stats.CPU_usage_rate,
 		cpu_stats.RAM_usage_rate, 
 		cpu_stats.swap_usage_rate);
-	/*wait for check*/
+	//wait for check
 	scanf("%c", &c);	
 }
+*/
 
 /* test resources_monitor */
 void Test_resources_monitor(void)
@@ -110,7 +113,10 @@ void Test_resources_monitor(void)
 	m_resources.sampling_interval[0] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[0], "resources_usage");
 
-	char *datapath = mf_start(&m_resources);
+	char server[] = "localhost:3040";
+	char platform_id[] = "ubuntu";
+
+	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath is :%s\n", datapath);
 	sleep(5);
 	
@@ -127,7 +133,7 @@ void Test_resources_monitor(void)
  * disk_monitor test
  ******************************************************************************/
 /* test disk_stats_read */
-void Test_disk_stats_read(void)
+/*void Test_disk_stats_read(void)
 {
 	char c;
 	int pid = getpid();
@@ -142,7 +148,7 @@ void Test_disk_stats_read(void)
 		pid, 
 		disk_info.read_bytes_before,
 		disk_info.write_bytes_before);
-	/*wait for check*/
+	//wait for check
 	scanf("%c", &c);
 
 	dummy();
@@ -153,9 +159,9 @@ void Test_disk_stats_read(void)
 		pid, 
 		disk_info.read_bytes_after,
 		disk_info.write_bytes_after);
-	/*wait for check*/
+	//wait for check
 	scanf("%c", &c);
-}
+}*/
 
 /* test disk_monitor */
 void Test_disk_monitor(void)
@@ -165,12 +171,15 @@ void Test_disk_monitor(void)
 	m_resources.num_metrics = 1;
 	m_resources.sampling_interval[0] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[0], "disk_io");
+	
+	char server[] = "localhost:3040";
+	char platform_id[] = "ubuntu";
 
-	char *datapath = mf_start(&m_resources);
+	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath is :%s\n", datapath);
 	sleep(5);
 	
-	/*do dummy things*/
+	//do dummy things
 	for(i = 0; i < 10; i++) {
 		dummy();
 		sleep(2);
@@ -181,6 +190,7 @@ void Test_disk_monitor(void)
 /*******************************************************************************
  * power_monitor test
  ******************************************************************************/
+/*
 void Test_CPU_power_read(void)
 {
 	char c;
@@ -217,7 +227,7 @@ void Test_CPU_power_read(void)
 	printf("process runtime:   %llu\n", (after.pid_runtime - before.pid_runtime));
 	printf("system cpu energy: %f\n", (after.sys_cpu_energy - before.sys_cpu_energy));
 	
-	/*wait for check*/
+	//wait for check
 	scanf("%c", &c);
 }
 
@@ -263,6 +273,7 @@ void Test_disk_power_read(void)
 
 	scanf("%c", &c);
 }
+*/
 
 /*******************************************************************************
  * resources and disk monitor test 
@@ -278,7 +289,10 @@ void Test_resources_and_disk(void)
 	m_resources.sampling_interval[1] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[1], "disk_io");
 
-	char *datapath = mf_start(&m_resources);
+	char server[] = "localhost:3040";
+	char platform_id[] = "ubuntu";
+
+	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath : %s\n", datapath);
 	
 	/*do dummy things*/
@@ -291,33 +305,43 @@ void Test_resources_and_disk(void)
 
 	/* when "dummy" application already exists in database /mf/workflows, 
 	it is possible to send collected metrics to the server */
-	char server[] = "192.168.0.2:3040";
 	char application_id[] = "dummy";
 	char task_id[] = "t2";
-	char platform_id[] = "platform_default";
 	char *experiment_id = mf_send(server, application_id, task_id, platform_id);
 	printf("experiment_id : %s\n", experiment_id);
 	free(experiment_id);
 }
 
+/*******************************************************************************
+ * config read from mf server test 
+ ******************************************************************************/
+/*
+void Test_read_config(void)
+{
+	char server[] = "localhost:3040";
+	char platform_id[] = "ubuntu";
+	get_config_parameters(server, platform_id);
+}
+*/
 
 int main(void)
 {
+	//Test_read_config();
+
 	/* test basic functions */
 	//Test_resources_stat_cpu();
 	//Test_resources_stat_all_and_calculate();
 	//Test_disk_stats_read();
 
 	/* test mf interfaces: mf_start, mf_end */
-	//Test_resources_monitor(); 	//only resources monitoring 
-	//Test_disk_monitor();		//only disk monitoring
+	Test_resources_monitor(); 	//only resources monitoring 
+	Test_disk_monitor();		//only disk monitoring
 
 	/* test mf interfaces: mf_start, mf_end, mf_send */	
-	//Test_resources_and_disk();	//both resources and disk monitoring
+	Test_resources_and_disk();	//both resources and disk monitoring
 
-	Test_CPU_power_read();
-	Test_mem_power_read();
-	Test_disk_power_read();
-
+	//Test_CPU_power_read();
+	//Test_mem_power_read();
+	//Test_disk_power_read();
 	return 0;
 }

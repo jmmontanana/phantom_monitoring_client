@@ -17,6 +17,8 @@
 #ifndef PUBLISHER_H_
 #define PUBLISHER_H_
 
+int query_json(char *URL, char *response);
+
 /**
  * @brief Sends the data defined in message to the given URL via cURL.
  *

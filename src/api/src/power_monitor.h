@@ -9,27 +9,27 @@
    - 800MHZ: 6W
    - 2.Ghz: 24.5W
  ***********************************************************************/
-#define MAX_CPU_POWER 24.5
-#define MIN_CPU_POWER 6.0
+//#define MAX_CPU_POWER 24.5
+//#define MIN_CPU_POWER 6.0
 
 /*
  **********************************************************************
  Memory Specification
  **********************************************************************
  */
-#define MEMORY_POWER 2.016 //in Watts, from my memory module specification
-#define L2CACHE_MISS_LATENCY 59.80 //ns, get use calibrator
-#define L2CACHE_LINE_SIZE 128 //byte get use calibrator
+//#define MEMORY_POWER 2.016 //in Watts, from my memory module specification
+//#define L2CACHE_MISS_LATENCY 59.80 //ns, get use calibrator
+//#define L2CACHE_LINE_SIZE 128 //byte get use calibrator
 
 /*
  **********************************************************************
  Energy, in Joul, when read a kilobytes
-   - Read: 0.00002 * 2.78
-   - Write: 0.00002 * 2.19
+   - Read: 0.02 * 2.78
+   - Write: 0.02 * 2.19
  **********************************************************************
  */
-#define EDISKRPERKB (0.00002 * 2.78)
-#define EDISKWPERKB  (0.00002 * 2.19)
+//#define E_DISK_R_PER_KB (0.02 * 2.78)
+//#define E_DISK_W_PER_KB (0.02 * 2.19)
 
 typedef struct pid_stats_info_t {
 	unsigned long long sys_itv;
@@ -43,10 +43,10 @@ typedef struct pid_stats_info_t {
 } pid_stats_info;
 
 int power_monitor(int pid, char *DataPath, long sampling_interval);
+
 int create_perf_stat_counter(int pid);
 int read_and_check(int fd, int pid, pid_stats_info *info);
 int calcualte_and_update(pid_stats_info *before, pid_stats_info *after, pid_stats_info *delta);
-
 int read_pid_time(int pid, pid_stats_info *info);
 int read_pid_io(int pid, pid_stats_info *info);
 int read_sys_time(pid_stats_info *info);
