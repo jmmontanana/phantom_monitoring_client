@@ -17,4 +17,5 @@ extern char *metrics_publish_URL;
 
 extern char *platform_id;
 
+extern char *logFileName;
 #endif /* MAIN_H */

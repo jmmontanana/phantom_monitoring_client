@@ -121,6 +121,8 @@ void* discover_plugins(const char *dirname, PluginManager *pm) {
 
 /* Clean-up plug-ins after execution */
 void cleanup_plugins(void* vpds) {
+	if(vpds == NULL)
+		return NULL;
 	PluginDiscoveryState *pds = (PluginDiscoveryState*) vpds;
 	PluginHandleList *node = pds->handle_list;
 	while (node) {
@@ -160,8 +162,7 @@ void* load_plugin(char *name, char *fullpath, PluginManager *pm) {
 	PluginInitFunc init_func = (PluginInitFunc) (intptr_t) ptr;
 
 	int rc = init_func(pm);
-
-	if (rc < 0) {
+	if (rc <= 0) {
 		log_error("Plugin init function failed for %s\n", strerror(rc));
 		dlclose(libhandle);
 		return NULL ;

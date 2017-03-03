@@ -64,12 +64,12 @@ int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events, int
     for(i = 0; i < num_cores; i++) {
     	EventSet[i] = PAPI_NULL;
     	if (PAPI_create_eventset(&EventSet[i]) != PAPI_OK) {
-			fprintf(stderr, "PAPI_create_eventset failed.\n");
+			fprintf(stderr, "PAPI_create_eventset for core %d failed.\n", i);
 			return FAILURE;
 		}
 		
     	if (PAPI_assign_eventset_component(EventSet[i], DEFAULT_CPU_COMPONENT) != PAPI_OK) {
-        	fprintf(stderr, "PAPI_assign_eventset_component failed.\n");
+        	fprintf(stderr, "PAPI_assign_eventset_component for core %d failed.\n", i);
 			return FAILURE;
     	}
 
@@ -78,7 +78,7 @@ int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events, int
     	domain_opt.eventset = EventSet[i];
     	domain_opt.domain = PAPI_DOM_ALL;
     	if (PAPI_set_opt(PAPI_DOMAIN, (PAPI_option_t*) &domain_opt) != PAPI_OK) {
-        	fprintf(stderr, "PAPI_set_opt for PAPI_DOMAIN failed.\n");
+        	fprintf(stderr, "PAPI_set_opt for core %d for PAPI_DOMAIN failed.\n", i);
 			return FAILURE;
     	}
 
@@ -86,7 +86,7 @@ int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events, int
     	gran_opt.eventset = EventSet[i];
 	    gran_opt.granularity = PAPI_GRN_SYS;
 	    if (PAPI_set_opt(PAPI_GRANUL, (PAPI_option_t*) &gran_opt) != PAPI_OK) {
-    	    fprintf(stderr, "PAPI_set_opt for PAPI_GRANUL failed.\n");
+    	    fprintf(stderr, "PAPI_set_opt for core %d for PAPI_GRANUL failed.\n", i);
 			return FAILURE;
     	}
 
@@ -94,7 +94,7 @@ int mf_CPU_perf_init(Plugin_metrics *data, char **events, size_t num_events, int
     	cpu_opt.eventset = EventSet[i];
 	    cpu_opt.cpu_num = i;
 	    if (PAPI_set_opt(PAPI_CPU_ATTACH, (PAPI_option_t*) &cpu_opt) != PAPI_OK) {
-    		fprintf(stderr, "PAPI_set_opt for PAPI_CPU_ATTACH failed.\n");
+    		fprintf(stderr, "PAPI_set_opt for core %d for PAPI_CPU_ATTACH failed.\n", i);
 			return FAILURE;
     	}
 
