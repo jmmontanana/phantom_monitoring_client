@@ -51,6 +51,12 @@ const char Linux_resources_metrics[RESOURCES_EVENTS_NUM][32] = {
 	"CPU_usage_rate", "RAM_usage_rate", "swap_usage_rate", 
 	"net_throughput", "io_throughput" };
 
+struct cpu_stats {
+	unsigned long long total_cpu_time;
+	unsigned long long total_idle_time;
+};
+struct cpu_stats cpu_stat_before;
+struct cpu_stats cpu_stat_after;
 
 struct net_stats {
 	unsigned long long rcv_bytes;
@@ -70,7 +76,7 @@ struct io_stats io_stat_after;
  * Forward Declarations
  ******************************************************************************/
 int flag_init(char **events, size_t num_events);
-float CPU_usage_rate_read();
+int CPU_stat_read(struct cpu_stats *cpu_info);
 float RAM_usage_rate_read();
 float swap_usage_rate_read();
 int NET_stat_read(struct net_stats *nets_info);
@@ -101,6 +107,7 @@ int mf_Linux_resources_init(Plugin_metrics *data, char **events, size_t num_even
 	if(flag & HAS_CPU_STAT) {
 		data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
     	strcpy(data->events[i], "CPU_usage_rate");
+    	CPU_stat_read(&cpu_stat_before);
     	i++;
 	}
 	if(flag & HAS_RAM_STAT) {
@@ -145,7 +152,15 @@ int mf_Linux_resources_sample(Plugin_metrics *data)
 
 	int i = 0;
 	if(flag & HAS_CPU_STAT) {
-		data->values[i] = CPU_usage_rate_read();
+		CPU_stat_read(&cpu_stat_after);
+		if(cpu_stat_after.total_cpu_time > cpu_stat_before.total_cpu_time) {
+			data->values[i] = ((cpu_stat_after.total_cpu_time - cpu_stat_before.total_cpu_time) - (cpu_stat_after.total_idle_time - cpu_stat_before.total_idle_time)) * 100.0 /
+							(cpu_stat_after.total_cpu_time - cpu_stat_before.total_cpu_time);
+
+			/* update the cpu_stat_before values by the current values */
+			cpu_stat_before.total_cpu_time = cpu_stat_after.total_cpu_time;
+			cpu_stat_before.total_idle_time = cpu_stat_after.total_idle_time;
+		}
 		i++;
 	}
 	if(flag & HAS_RAM_STAT) {
@@ -160,23 +175,29 @@ int mf_Linux_resources_sample(Plugin_metrics *data)
 		NET_stat_read(&net_stat_after);
 		unsigned long long total_bytes = (net_stat_after.rcv_bytes - net_stat_before.rcv_bytes) 
 			+ (net_stat_after.send_bytes - net_stat_before.send_bytes);
-		data->values[i] = (float) (total_bytes * 1.0 / time_interval);
-		i++;
+
+		if(total_bytes > 0.0) {
+			data->values[i] = (float) (total_bytes * 1.0 / time_interval);
 		
-		/* update the net_stat_before values by the current values */
-		net_stat_before.rcv_bytes = net_stat_after.rcv_bytes;
-		net_stat_before.send_bytes = net_stat_after.send_bytes;
+			/* update the net_stat_before values by the current values */
+			net_stat_before.rcv_bytes = net_stat_after.rcv_bytes;
+			net_stat_before.send_bytes = net_stat_after.send_bytes;	
+		}
+		i++;
 	}
 	if(flag & HAS_IO_STAT) {
 		sys_IO_stat_read(&io_stat_after);
 		unsigned long long total_bytes = (io_stat_after.read_bytes - io_stat_before.read_bytes)
 			+ (io_stat_after.write_bytes - io_stat_before.write_bytes);
-		data->values[i] = (float) (total_bytes * 1.0 / time_interval);
-		i++;
 
-		/* update the io_stat_before values by the current values */
-		io_stat_before.read_bytes = io_stat_after.read_bytes;
-		io_stat_before.write_bytes = io_stat_after.write_bytes;
+		if(total_bytes > 0.0) {
+			data->values[i] = (float) (total_bytes * 1.0 / time_interval);
+		
+			/* update the io_stat_before values by the current values */
+			io_stat_before.read_bytes = io_stat_after.read_bytes;
+			io_stat_before.write_bytes = io_stat_after.write_bytes;
+		}
+		i++;
 	}
 
 	/* update timestamp */
@@ -246,17 +267,19 @@ int flag_init(char **events, size_t num_events)
 /* Gets cpu usage rate (unit is %). 
  * return the cpu usgae rate on success; 0.0 otherwise
  */
-float CPU_usage_rate_read() {
+int CPU_stat_read(struct cpu_stats *cpu_info) {
 	FILE *fp;
 	char line[1024];
 	unsigned long long cpu_user, cpu_nice, cpu_sys, cpu_idle, cpu_iowait, cpu_irq, cpu_softirq, cpu_steal;
-	float CPU_usage_rate = 0.0;
 
 	fp = fopen(CPU_STAT_FILE, "r");
 	if(fp == NULL) {
 		fprintf(stderr, "Error: Cannot open %s.\n", CPU_STAT_FILE);
-		return 0.0;
+		return 0;
 	}
+	cpu_info->total_cpu_time = 0;
+	cpu_info->total_idle_time = 0;
+	
 	if (fgets(line, 1024, fp) != NULL) {
 		sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
 			       &cpu_user,
@@ -267,14 +290,13 @@ float CPU_usage_rate_read() {
 			       &cpu_irq,
 			       &cpu_softirq,
 			       &cpu_steal);
-		unsigned long long total_cpu_time = 
+		cpu_info->total_cpu_time = 
 			cpu_user + cpu_nice + cpu_sys + cpu_idle + cpu_iowait + cpu_irq + cpu_softirq + cpu_steal;
-		unsigned long long total_idle_time =
+		cpu_info->total_idle_time =
 			cpu_idle + cpu_iowait;
-		CPU_usage_rate = (total_cpu_time - total_idle_time) * 100.0 / total_cpu_time;
 	}
 	fclose(fp);
-	return CPU_usage_rate;
+	return 1;
 }
 
 /* Gets ram usage rate (unit is %). 
