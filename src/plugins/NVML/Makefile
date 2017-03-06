@@ -9,8 +9,6 @@ CFLAGS = -std=gnu99 -pedantic -Wall -Wwrite-strings  -Wpointer-arith -Wcast-alig
 
 LFLAGS = -lrt -ldl ${NVML_LIB}
 
-NVML_ENABLE ?= 0
-
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
     CFLAGS += -DDEBUG -g
@@ -36,30 +34,27 @@ CORE_INC = -I${CURDIR}/../../core
 all: clean prepare mf_NVML_client mf_plugin_NVML.so
 
 mf_plugin_NVML.so: mf_NVML_connector.o mf_plugin_NVML.o
-ifeq ($(NVML_ENABLE), 1)
-	${CC} -shared $^ -o ${LIB}/mf_plugin_NVML.so ${LFLAGS}
-endif 
+	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
+		${CC} -shared $^ -o ${LIB}/mf_plugin_NVML.so ${LFLAGS}; \
+	fi 
 
 mf_NVML_connector.o: ${SRC}/mf_NVML_connector.c
-ifeq ($(NVML_ENABLE), 1)
-	${CC} -c $< -o $@ ${COPT_SO}
-endif
+	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
+		${CC} -c $< -o $@ ${COPT_SO}; \
+	fi
 
 mf_plugin_NVML.o: ${SRC}/mf_plugin_NVML.c
-ifeq ($(NVML_ENABLE), 1)
-	${CC} -c $< -o $@ ${COPT_SO}
-endif
+	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
+		${CC} -c $< -o $@ ${COPT_SO}; \
+	fi
 
 mf_NVML_client: ${SRC}/utils/mf_NVML_client.c ${SRC}/mf_NVML_connector.c
-ifeq ($(NVML_ENABLE), 1)
-	${CC} $^ -o $@ ${CFLAGS} ${LFLAGS}
-endif
+	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
+		${CC} $^ -o $@ ${CFLAGS} ${LFLAGS}; \
+	fi
 
 prepare: 
 	@mkdir -p ${LIB}
-	if [ -d "/usr/lib64" ]; then \
-		NVML_ENABLE = 1; \
-	fi
 
 clean:
 	rm -rf *.o *.so
