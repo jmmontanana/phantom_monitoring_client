@@ -269,6 +269,10 @@ int prepare(void)
 		log_error("Cannot create new experiment for application %s\n", application_id);
 		return FAILURE;
 	}
+	printf("> application_id : %s\n", application_id);
+        printf("> task_id : %s\n", task_id);
+        printf("> experiment_id : %s\n", experiment_id);
+
 	log_info("> application_id : %s\n", application_id);
 	log_info("> task_id : %s\n", task_id);
 	log_info("> experiment_id : %s\n", experiment_id);
