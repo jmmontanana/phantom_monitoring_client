@@ -27,13 +27,13 @@
 
 /*
  **********************************************************************
- Energy, in milliJoul, when read a bytes
+ Energy of the disk specs
    - Read: 0.02 * 2.78
    - Write: 0.02 * 2.19
  **********************************************************************
  */
-#define E_DISK_R_PER_KB (0.02 * 2.78)
-#define E_DISK_W_PER_KB  (0.02 * 2.19)
+#define E_DISK_R_PER_KB (0.02 * 2.78)	// milliJoule/KB
+#define E_DISK_W_PER_KB  (0.02 * 2.19)	// milliJoule/KB
 
 /*
  **********************************************************************
@@ -44,8 +44,8 @@
    - Real download bandwidth 5.665M/s
  **********************************************************************
  */
-#define E_NET_SND_PER_KB (1800 / (1024 * 12.330))
-#define E_NET_RCV_PER_KB (1400 / (1024 * 5.665))
+#define E_NET_SND_PER_KB (1800 / (1024 * 12.330))	// milliJoule/KB
+#define E_NET_RCV_PER_KB (1400 / (1024 * 5.665))	// milliJoule/KB
 
 
 #define SUCCESS 1

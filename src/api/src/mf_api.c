@@ -17,7 +17,7 @@
  * Variable Declarations
  ******************************************************************************/
 typedef struct each_metric_t {
-	long sampling_interval;	//in milliseconds
+	long sampling_interval;				//in milliseconds
 	char metric_name[NAME_LENGTH];		//user defined metrics
 } each_metric;
 

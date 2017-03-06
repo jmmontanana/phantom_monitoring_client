@@ -61,8 +61,8 @@ int power_monitor(int pid, char *DataPath, long sampling_interval)
 		pid_mem_power = ((delta.pid_read_bytes + delta.pid_write_bytes - delta.pid_cancelled_writes) / parameters_value[4] + delta.pid_l2_cache_misses) *
 						parameters_value[3] * parameters_value[2] * 1.0e-6 / duration;
 		/* pid-based disk access power in milliwatt */
-		pid_disk_power = (delta.pid_read_bytes * parameters_value[5] + (delta.pid_write_bytes - delta.pid_cancelled_writes) * parameters_value[6]) * 1.0e-3 / 
-						1024 * duration;
+		pid_disk_power = (delta.pid_read_bytes * parameters_value[5] + (delta.pid_write_bytes - delta.pid_cancelled_writes) * parameters_value[6]) / 
+						(1024 * duration);
 
 		timestamp_ms = timestamp_after.tv_sec * 1000.0  + (double)(timestamp_after.tv_nsec / 1.0e6);
 			
