@@ -15,31 +15,26 @@
 /* some dummy application */
 void dummy(void)
 {
-	int i;
-//	int i, j;
+	int i, j;
 	float x1, x2, result[1024*1024];
-//	char *tmp;
+	char *tmp = calloc(1024, sizeof(char));
 
 	for (i = 0; i < 1024 * 1024; i++) {
 		x1 = (float)rand()/(float)(RAND_MAX/100.0);
 		x2 = (float)rand()/(float)(RAND_MAX/1.0);
 		result[i] = x1 * x2;
 	}
+
 	FILE *fp = fopen("./result.dat", "w");
 	for (i = 0; i < 1024 * 1024; i++) {
-		fprintf(fp, "result[%d] = %.3f\n", i, result[i]);
-	}
-/*
-	for (i = 0; i < 1024; i++) {
-		tmp = (char *)malloc(sizeof(char) * i * 1024);
-		for (j = 0; j < i; j++) {
-			sprintf(tmp+strlen(tmp), "* ");
+		memset(tmp, '\0', 1024);
+		sprintf(tmp, "result[%d] = %.3f", i, result[i]);
+		for (j = 0; j < 16; j++) {
+			strcat(tmp, "* ");
 		}
-		fprintf(fp, "%s\n", tmp);
-		if(tmp != NULL)
-			free(tmp);
+		fprintf(fp, "* * %s\n", tmp);
 	}
-*/
+
 	fclose(fp);
 }
 
@@ -274,6 +269,29 @@ void Test_disk_power_read(void)
 	scanf("%c", &c);
 }
 */
+void Test_power_monitor(void)
+{
+	int i;
+	metrics m_resources;
+	m_resources.num_metrics = 1;
+	m_resources.sampling_interval[0] = 2000; // 2s
+	strcpy(m_resources.metrics_names[0], "power");
+
+	char server[] = "localhost:3040";
+	char platform_id[] = "ubuntu";
+
+	char *datapath = mf_start(server, platform_id, &m_resources);
+	printf("datapath : %s\n", datapath);
+	
+	/*do dummy things*/
+	for(i = 0; i < 100; i++) {
+		dummy();
+		//sleep(1);
+	}
+
+	mf_end();
+
+}
 
 /*******************************************************************************
  * resources and disk monitor test 
@@ -289,16 +307,16 @@ void Test_resources_and_disk(void)
 	m_resources.sampling_interval[1] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[1], "disk_io");
 
-	char server[] = "192.168.0.2:3040";
+	char server[] = "localhost:3040";
 	char platform_id[] = "ubuntu";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath : %s\n", datapath);
 	
 	/*do dummy things*/
-	for(i = 0; i < 10; i++) {
+	for(i = 0; i < 100; i++) {
 		dummy();
-		sleep(1);
+		//sleep(1);
 	}
 
 	mf_end();
@@ -338,7 +356,8 @@ int main(void)
 	//Test_disk_monitor();		//only disk monitoring
 
 	/* test mf interfaces: mf_start, mf_end, mf_send */	
-	Test_resources_and_disk();	//both resources and disk monitoring
+	//Test_resources_and_disk();	//both resources and disk monitoring
+	Test_power_monitor();
 
 	//Test_CPU_power_read();
 	//Test_mem_power_read();

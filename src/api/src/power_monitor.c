@@ -50,13 +50,12 @@ int power_monitor(int pid, char *DataPath, long sampling_interval)
 		/*calculate the increments of counters; update the values before and after */
 		if(calcualte_and_update(&before, &after, &delta) <= 0)
 			continue;
-
 		/* calculate the time interval in seconds */
 		duration = timestamp_after.tv_sec - timestamp_before.tv_sec + ((timestamp_after.tv_nsec - timestamp_before.tv_nsec) / 1.0e9);
 		/* system-wide cpu power in milliwatt */
-		sys_cpu_power = delta.sys_cpu_energy * delta.sys_runtime * 1.0e5 / (delta.sys_itv * duration);
+		sys_cpu_power = delta.sys_cpu_energy * delta.sys_runtime / (delta.sys_itv * duration);
 		/* pid-based cpu power in milliwatt */
-		pid_cpu_power = sys_cpu_power * delta.pid_runtime * 100 / delta.sys_runtime;
+		pid_cpu_power = sys_cpu_power * delta.pid_runtime / delta.sys_runtime;
 		/* pid-based memory access power in milliwatt */
 		pid_mem_power = ((delta.pid_read_bytes + delta.pid_write_bytes - delta.pid_cancelled_writes) / parameters_value[4] + delta.pid_l2_cache_misses) *
 						parameters_value[3] * parameters_value[2] * 1.0e-6 / duration;
@@ -138,7 +137,7 @@ int calcualte_and_update(pid_stats_info *before, pid_stats_info *after, pid_stat
 	delta->pid_l2_cache_misses = after->pid_l2_cache_misses - before->pid_l2_cache_misses;
 	delta->sys_cpu_energy = after->sys_cpu_energy - before->sys_cpu_energy;
 
-	memcpy(&before, &after, sizeof(pid_stats_info));
+	memcpy(before, after, sizeof(pid_stats_info));
 	return 1;
 }
 
@@ -248,9 +247,6 @@ int cpu_freq_stat(pid_stats_info *info)
 	unsigned long long tmp;
 	unsigned long long freqs[16];
 
-	printf("MAX_CPU_POWER: %f\n", parameters_value[0]);
-	printf("MIN_CPU_POWER: %f\n", parameters_value[1]);
-	
 	/* 
 	  check if system support cpu freq counting 
 	 */
@@ -292,9 +288,9 @@ int cpu_freq_stat(pid_stats_info *info)
 		fclose(fp);
 
 		for (i = 0; i <= max_i; i++) {
-			energy_each = (parameters_value[0] - power_range * i / max_i) * freqs[i] / 100.0; // in Joule
+			energy_each = (parameters_value[0] - power_range * i / max_i) * freqs[i] * 10.0; // in milliJoule
 			energy_total += energy_each; 
-		}	
+		}
 	}
 
 	closedir(dir);
