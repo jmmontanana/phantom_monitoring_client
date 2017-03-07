@@ -121,17 +121,17 @@ void* discover_plugins(const char *dirname, PluginManager *pm) {
 
 /* Clean-up plug-ins after execution */
 void cleanup_plugins(void* vpds) {
-	if(vpds == NULL)
-		return NULL;
-	PluginDiscoveryState *pds = (PluginDiscoveryState*) vpds;
-	PluginHandleList *node = pds->handle_list;
-	while (node) {
-		PluginHandleList *next = node->next;
-		dlclose(node->handle);
-		free(node);
-		node = next;
+	if(vpds != NULL) {
+		PluginDiscoveryState *pds = (PluginDiscoveryState*) vpds;
+		PluginHandleList *node = pds->handle_list;
+		while (node) {
+			PluginHandleList *next = node->next;
+			dlclose(node->handle);
+			free(node);
+			node = next;
+		}
+		free(pds);	
 	}
-	free(pds);
 }
 
 /* Load a plugin by calling the init function of a plugin,

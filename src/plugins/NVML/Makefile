@@ -34,24 +34,24 @@ CORE_INC = -I${CURDIR}/../../core
 all: clean prepare mf_NVML_client mf_plugin_NVML.so
 
 mf_plugin_NVML.so: mf_NVML_connector.o mf_plugin_NVML.o
-	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
-		${CC} -shared $^ -o ${LIB}/mf_plugin_NVML.so ${LFLAGS}; \
-	fi 
+ifneq (,$(wildcard /usr/lib64/libnvidia-ml.so))
+	${CC} -shared $^ -o ${LIB}/mf_plugin_NVML.so ${LFLAGS}
+endif
 
 mf_NVML_connector.o: ${SRC}/mf_NVML_connector.c
-	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
-		${CC} -c $< -o $@ ${COPT_SO}; \
-	fi
+ifneq (,$(wildcard /usr/lib64/libnvidia-ml.so))
+	${CC} -c $< -o $@ ${COPT_SO}
+endif
 
 mf_plugin_NVML.o: ${SRC}/mf_plugin_NVML.c
-	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
-		${CC} -c $< -o $@ ${COPT_SO}; \
-	fi
+ifneq (,$(wildcard /usr/lib64/libnvidia-ml.so))
+	${CC} -c $< -o $@ ${COPT_SO}
+endif
 
 mf_NVML_client: ${SRC}/utils/mf_NVML_client.c ${SRC}/mf_NVML_connector.c
-	if [ -a "/usr/lib64/libnvidia-ml.so" ]; then \
-		${CC} $^ -o $@ ${CFLAGS} ${LFLAGS}; \
-	fi
+ifneq (,$(wildcard /usr/lib64/libnvidia-ml.so))
+	${CC} $^ -o $@ ${CFLAGS} ${LFLAGS}
+endif
 
 prepare: 
 	@mkdir -p ${LIB}
