@@ -25,6 +25,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <chrono>
 
 #include "Elements.h"
 
@@ -251,11 +252,15 @@ int main() {
 	for (int n = 0; n < nrLoops; n++) {
 		cout << "LOOP " << n << endl;
 
-        clock_t begin_time = clock();
+        //clock_t begin_time = clock();
+        auto begin_time = std::chrono::high_resolution_clock::now();
 		simulation_loop(&(*branches), &(*vertexes), netparams, n,
 				integrationStep);
-		float duration = float( clock () - begin_time ) /  CLOCKS_PER_SEC;
-printf("%f\t", duration);
+		auto end_time = std::chrono::high_resolution_clock::now();
+		//float duration = float( clock () - begin_time ) /  CLOCKS_PER_SEC;
+		std::chrono::duration<double, std::milli> duration = end_time-begin_time;
+		cout << "Loop duration (ms): " << duration.count() << endl;
+
 	/* MONITORING
 	    I'd like to store here the duration of each loop --> duration
 	*/	
