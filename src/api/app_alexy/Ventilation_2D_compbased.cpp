@@ -255,7 +255,7 @@ int main() {
 		simulation_loop(&(*branches), &(*vertexes), netparams, n,
 				integrationStep);
 		float duration = float( clock () - begin_time ) /  CLOCKS_PER_SEC;
-
+printf("%f\t", duration);
 	/* MONITORING
 	    I'd like to store here the duration of each loop --> duration
 	*/	

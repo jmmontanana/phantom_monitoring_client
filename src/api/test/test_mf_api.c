@@ -307,14 +307,14 @@ void Test_resources_and_disk(void)
 	m_resources.sampling_interval[1] = SAMPLE_INTERVAL; // 1s
 	strcpy(m_resources.metrics_names[1], "disk_io");
 
-	char server[] = "localhost:3040";
+	char server[] = "192.168.0.2:3040";
 	char platform_id[] = "ubuntu";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath : %s\n", datapath);
 	
 	/*do dummy things*/
-	for(i = 0; i < 100; i++) {
+	for(i = 0; i < 20; i++) {
 		dummy();
 		//sleep(1);
 	}
@@ -326,7 +326,9 @@ void Test_resources_and_disk(void)
 	char application_id[] = "dummy";
 	char task_id[] = "t2";
 	char *experiment_id = mf_send(server, application_id, task_id, platform_id);
-	printf("experiment_id : %s\n", experiment_id);
+	printf("> application_id : %s\n", application_id);
+	printf("> task_id : %s\n", task_id);
+	printf("> experiment_id : %s\n", experiment_id);
 	free(experiment_id);
 }
 
@@ -356,8 +358,8 @@ int main(void)
 	//Test_disk_monitor();		//only disk monitoring
 
 	/* test mf interfaces: mf_start, mf_end, mf_send */	
-	//Test_resources_and_disk();	//both resources and disk monitoring
-	Test_power_monitor();
+	Test_resources_and_disk();	//both resources and disk monitoring
+	//Test_power_monitor();
 
 	//Test_CPU_power_read();
 	//Test_mem_power_read();
