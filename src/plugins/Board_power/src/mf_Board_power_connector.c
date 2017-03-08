@@ -20,7 +20,7 @@
 #include <iio.h>
 #include "mf_Board_power_connector.h"
 
-#define ACME_DEVICE_NAME "baylibre-acme.local"
+//#define ACME_DEVICE_NAME "baylibre-acme.local"
 #define SUCCESS 1
 #define FAILURE 0
 #define MAX_DEVICES 8
@@ -49,7 +49,7 @@ static struct my_channel my_chn[MAX_DEVICES][MAX_CHANNELS];
 /*******************************************************************************
  * Forward Declarations
  ******************************************************************************/
-int mf_acme_is_enabled();
+int mf_acme_is_enabled(char *acme_name);
 static void init_ina2xx_channels(struct iio_device *dev, int device_idx);
 int create_EventSets(Plugin_metrics *data, char **events, size_t num_events);
 
@@ -66,9 +66,9 @@ void reset_my_channels_value();
  *  devices; assign channel labels to data->events.
  *  @return 1 on success; 0 otherwise.
  */
-int mf_Board_power_init(Plugin_metrics *data, char **events, size_t num_events)
+int mf_Board_power_init(Plugin_metrics *data, char **events, size_t num_events, char *acme_name)
 {
-	if(!mf_acme_is_enabled()) {
+	if(!mf_acme_is_enabled(acme_name)) {
 		return FAILURE;
 	}
 
@@ -161,13 +161,13 @@ void mf_Board_power_shutdown()
 
 /* Checks if the ACME component is available through hostname "baylibre-acme.local";
 initializes variable "my_chn" for all possible devices and channels */
-int mf_acme_is_enabled()
+int mf_acme_is_enabled(char *acme_name)
 {
 	int c, device_idx;
 	char temp[1024];
 	unsigned int buffer_size = SAMPLES_PER_READ;
 
-	ctx = iio_create_network_context(ACME_DEVICE_NAME);
+	ctx = iio_create_network_context(acme_name);
 	if (!ctx) {
 		fprintf(stderr, "Unable to create IIO context\n");
 		return FAILURE;

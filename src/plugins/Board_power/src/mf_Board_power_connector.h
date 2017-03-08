@@ -23,7 +23,7 @@
  *
  *  @return 1 on success; 0 otherwise.
  */
-int mf_Board_power_init(Plugin_metrics *data, char **events, size_t num_events);
+int mf_Board_power_init(Plugin_metrics *data, char **events, size_t num_events, char *acme_name);
 
 
 /** @brief Samples all possible events and stores data into the Plugin_metrics

@@ -52,10 +52,16 @@ init_mf_plugin_Board_power(PluginManager *pm)
     mfp_get_data_filtered_by_value("mf_plugin_Board_power", conf_data, "on");
 
     /*
+     * get the acme board name
+     */
+    char acme_name[16]={'\0'};
+    mfp_get_value("mf_plugin_Board_power", "ACME_BOARD_NAME", acme_name);
+
+    /*
      * initialize the monitoring data
      */
     monitoring_data = malloc(sizeof(Plugin_metrics));
-    int ret = mf_Board_power_init(monitoring_data, conf_data->keys, conf_data->size);
+    int ret = mf_Board_power_init(monitoring_data, conf_data->keys, conf_data->size, acme_name);
     if(ret == 0) {
         char plugin_name[] = "Board_power";
         log_error("Plugin %s init function failed.\n", plugin_name);
