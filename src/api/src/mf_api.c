@@ -42,6 +42,31 @@ static int api_prepare(char *Data_path);
 static void *MonitorStart(void *arg);
 int get_config_parameters(char *server, char *platform_id);
 
+int mf_user_metric(char *metric_name, char *value)
+{
+	if(DataPath[0] == '\0') {
+		pid = api_prepare(DataPath);
+	}
+	/*create and open the file*/
+	char FileName[256] = {'\0'};
+	sprintf(FileName, "%s/%s", DataPath, "user_defined");
+	FILE *fp = fopen(FileName, "a"); //append data to the end of the file
+	if (fp == NULL) {
+		printf("ERROR: Could not create file: %s\n", FileName);
+		return 0;
+	}
+	struct timespec timestamp;
+	/*get current timestamp */
+	clock_gettime(CLOCK_REALTIME, &timestamp);
+	/*convert to milliseconds */
+	double timestamp_ms = timestamp.tv_sec * 1000.0  + (double)(timestamp.tv_nsec / 1.0e6);
+
+    fprintf(fp, "\"local_timestamp\":\"%.1f\", \"%s\":%s\n", timestamp_ms, metric_name, value);
+	/*close the file*/
+	fclose(fp);
+	return 1;
+}
+
 /*
 Get the pid, and setup the DataPath for data storage 
 For each metric, create a thread, open a file for data storage, and start sampling the metrics periodically.

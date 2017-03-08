@@ -16,6 +16,7 @@ extern int running;
 extern char parameters_name[9][32];
 extern float parameters_value[9];
 
+int mf_user_metric(char *metric_name, char *value);
 /* 
 Get the pid, and setup the DataPath for data storage 
 For each metric, create a thread, open a file for data storage, and start sampling the metrics periodically.

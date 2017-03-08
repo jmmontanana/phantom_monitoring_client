@@ -28,6 +28,10 @@
 
 #include "Elements.h"
 
+extern "C" {
+#include "../src/mf_api.h"
+}
+
 using namespace std;
 
 void initNetwork(string name, NetworkParams** netparams, int nrBranches,
@@ -228,25 +232,51 @@ int main() {
 
 // simulation loops
 	float integrationStep = 0.001;
-	int nrLoops = 5;
+	int nrLoops = 5000;
+
+/* MONITORING START */
+	metrics m_resources;
+	m_resources.num_metrics = 2;
+	m_resources.sampling_interval[0] = 1000; // 1s
+	strcpy(m_resources.metrics_names[0], "resources_usage");
+
+	m_resources.sampling_interval[1] = 1000; // 1s
+	strcpy(m_resources.metrics_names[1], "disk_io");
+
+	//m_resources.sampling_interval[2] = 1000; // 1s
+	//strcpy(m_resources.metrics_names[2], "power");
+
+	char *datapath = mf_start("192.168.0.2:3040", "ubuntu", &m_resources);
 
 	for (int n = 0; n < nrLoops; n++) {
 		cout << "LOOP " << n << endl;
 
-                clock_t begin_time = clock();
+        clock_t begin_time = clock();
 		simulation_loop(&(*branches), &(*vertexes), netparams, n,
 				integrationStep);
 		float duration = float( clock () - begin_time ) /  CLOCKS_PER_SEC;
 
 	/* MONITORING
 	    I'd like to store here the duration of each loop --> duration
-	*/
-
+	*/	
+		char metric_value[8] = {'\0'};
+		sprintf(metric_value, "%f", duration);
+		mf_user_metric("duration", metric_value);
 	}
 
+/* MONITORING END */
+	mf_end();
+	
 	/* MONITORING
 	    I'd like to store here the total nr. of completed loops --> nrLoops
 	*/
+	char metric_value[8] = {'\0'};
+	sprintf(metric_value, "%d", nrLoops);
+	mf_user_metric("nrLoops", metric_value);		
+	
+/* MONITORING SEND */
+	char *experiment_id = mf_send("192.168.0.2:3040", "dummy", "t1", "ubuntu");
+	printf("\n> experiment_id is %s\n", experiment_id);
 
 	cout << "Simulation finished";
 	return 0;

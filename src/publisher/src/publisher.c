@@ -112,8 +112,8 @@ int publish_file(char *URL, char *static_string, char *filename)
     /*open the file, which contains data for publishing */
     int i = 0;
     FILE *fp;
-    char line[256];
-    char *message = calloc(10 * 256, sizeof(char));
+    char line[320];
+    char *message = calloc(10 * 320, sizeof(char));
     
     /* int curl with meaningless message */
     CURL *curl = prepare_publish(URL, message);
@@ -131,7 +131,7 @@ int publish_file(char *URL, char *static_string, char *filename)
     }
 
     /* read the lines in the file and send the message for each 10 lines */
-    while(fgets(line, 256, fp) != NULL) {
+    while(fgets(line, 320, fp) != NULL) {
         line[strlen(line) - 1] = '\0';
         switch(i) {
             case 0:
@@ -151,7 +151,7 @@ int publish_file(char *URL, char *static_string, char *filename)
                 }
                 /* reset i and message for following sending */
                 i = 0;
-                memset(message, '\0', 10*256);
+                memset(message, '\0', 10*320);
                 break;
             default:
                 sprintf(message + strlen(message), ",{%s, %s}", static_string, line);

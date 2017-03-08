@@ -6,10 +6,15 @@ CXXFLAGS := -Wall -g
 srcfiles := $(shell find . -maxdepth 1 -name "*.cpp")
 objects  := $(patsubst %.cpp, %.o, $(srcfiles))
 
+COMMON = ${CURDIR}/../..
+MF_API = -L$(COMMON)/api -lmf
+PUBLISH = -L${COMMON}/publisher -lpublisher
+CURL = -L$(COMMON)/../bin/curl/lib -lcurl
+
 all: $(appname)
 
 $(appname): $(objects)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(appname) $(objects) $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(appname) $(objects) $(LDLIBS) $(MF_API) $(PUBLISH) $(CURL)
 
 depend: .depend
 
