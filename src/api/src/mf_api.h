@@ -1,7 +1,6 @@
 #ifndef _MF_API_H
 #define _MF_API_H
 
-//#define SERVER               "localhost:3030"
 #define MAX_NUM_METRICS      3
 #define NAME_LENGTH          32
 

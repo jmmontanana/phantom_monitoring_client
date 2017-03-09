@@ -132,7 +132,7 @@ char *mf_send(char *server, char *application_id, char *component_id, char *plat
 	
 	sprintf(msg, "{\"application\":\"%s\", \"task\": \"%s\", \"host\": \"%s\"}",
 		application_id, component_id, platform_id);
-	sprintf(URL, "%s/v1/mf/experiments/%s", server, application_id); //server maybe localhost:3030
+	sprintf(URL, "%s/v1/phantom_mf/experiments/%s", server, application_id);
 
 	create_new_experiment(URL, msg, experiment_id);
 	if(experiment_id[0] == '\0') {
@@ -146,7 +146,7 @@ char *mf_send(char *server, char *application_id, char *component_id, char *plat
 	char *static_string = calloc(256, sizeof(char));
 	char *filename = calloc(256, sizeof(char));
 
-	sprintf(metric_URL, "%s/v1/mf/metrics", server);
+	sprintf(metric_URL, "%s/v1/phantom_mf/metrics", server);
 
 	DIR *dir = opendir(DataPath);
 	if(dir == NULL) {
@@ -244,7 +244,7 @@ int get_config_parameters(char *server, char *platform_id)
 	char *URL = calloc(256, sizeof(char));
 	char *response_str = calloc(256, sizeof(char));
 
-	sprintf(URL, "%s/v1/mf/configs/%s", server, platform_id);
+	sprintf(URL, "%s/v1/phantom_mf/configs/%s", server, platform_id);
 	if(query_json(URL, response_str) <= 0) {
 		printf("ERROR: query with %s failed.\n", URL);
 		return 0;

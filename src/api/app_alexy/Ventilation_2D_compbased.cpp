@@ -247,7 +247,7 @@ int main() {
 	//m_resources.sampling_interval[2] = 1000; // 1s
 	//strcpy(m_resources.metrics_names[2], "power");
 
-	char *datapath = mf_start("192.168.0.2:3040", "ubuntu", &m_resources);
+	char *datapath = mf_start("192.168.0.2:3040", "fangli_laptop", &m_resources);
 
 	for (int n = 0; n < nrLoops; n++) {
 		cout << "LOOP " << n << endl;
@@ -280,7 +280,7 @@ int main() {
 	mf_user_metric("nrLoops", metric_value);		
 	
 /* MONITORING SEND */
-	char *experiment_id = mf_send("192.168.0.2:3040", "dummy", "t1", "ubuntu");
+	char *experiment_id = mf_send("192.168.0.2:3040", "dummy", "t1", "fangli_laptop");
 	printf("\n> experiment_id is %s\n", experiment_id);
 
 	cout << "Simulation finished";

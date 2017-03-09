@@ -244,7 +244,7 @@ int prepare(void)
 	/* get server */
 	mfp_get_value("generic", "server", server_name);
 	/* get metrics send url */
-	sprintf(metrics_publish_URL, "%s/mf/metrics", server_name);
+	sprintf(metrics_publish_URL, "%s/phantom_mf/metrics", server_name);
 	/* get platform_id */
 	mfp_get_value("generic", "platform_id", platform_id);
 
@@ -262,7 +262,7 @@ int prepare(void)
 	
 	sprintf(msg, "{\"application\":\"%s\", \"task\": \"%s\", \"host\": \"%s\"}",
 		application_id, task_id, platform_id);
-	sprintf(experiments_URL, "%s/mf/experiments/%s", server_name, application_id); //server maybe localhost:3030
+	sprintf(experiments_URL, "%s/phantom_mf/experiments/%s", server_name, application_id);
 
 	create_new_experiment(experiments_URL, msg, experiment_id);
 	if(experiment_id[0] == '\0') {

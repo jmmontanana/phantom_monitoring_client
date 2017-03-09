@@ -109,7 +109,7 @@ void Test_resources_monitor(void)
 	strcpy(m_resources.metrics_names[0], "resources_usage");
 
 	char server[] = "192.168.0.2:3040";
-	char platform_id[] = "ubuntu";
+	char platform_id[] = "fangli_laptop";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath is :%s\n", datapath);
@@ -168,7 +168,7 @@ void Test_disk_monitor(void)
 	strcpy(m_resources.metrics_names[0], "disk_io");
 	
 	char server[] = "192.168.0.2:3040";
-	char platform_id[] = "ubuntu";
+	char platform_id[] = "fangli_laptop";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath is :%s\n", datapath);
@@ -277,8 +277,8 @@ void Test_power_monitor(void)
 	m_resources.sampling_interval[0] = 2000; // 2s
 	strcpy(m_resources.metrics_names[0], "power");
 
-	char server[] = "localhost:3040";
-	char platform_id[] = "ubuntu";
+	char server[] = "192.168.0.2:3040";
+	char platform_id[] = "fangli_laptop";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath : %s\n", datapath);
@@ -308,7 +308,7 @@ void Test_resources_and_disk(void)
 	strcpy(m_resources.metrics_names[1], "disk_io");
 
 	char server[] = "192.168.0.2:3040";
-	char platform_id[] = "ubuntu";
+	char platform_id[] = "fangli_laptop";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath : %s\n", datapath);
@@ -321,7 +321,7 @@ void Test_resources_and_disk(void)
 
 	mf_end();
 
-	/* when "dummy" application already exists in database /mf/workflows, 
+	/* when "dummy" application already exists in database, check with /v1/phantom_mf/workflows, 
 	it is possible to send collected metrics to the server */
 	char application_id[] = "dummy";
 	char task_id[] = "t2";
@@ -338,8 +338,8 @@ void Test_resources_and_disk(void)
 /*
 void Test_read_config(void)
 {
-	char server[] = "localhost:3040";
-	char platform_id[] = "ubuntu";
+	char server[] = "192.168.0.2:3040";
+	char platform_id[] = "fangli_laptop";
 	get_config_parameters(server, platform_id);
 }
 */
