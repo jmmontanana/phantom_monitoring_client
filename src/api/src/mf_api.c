@@ -22,6 +22,7 @@ typedef struct each_metric_t {
 } each_metric;
 
 int running;
+int keep_local_data_flag = 1;
 char parameters_name[9][32] = {"MAX_CPU_POWER", "MIN_CPU_POWER", 
 	                           "MEMORY_POWER", "L2CACHE_MISS_LATENCY", "L2CACHE_LINE_SIZE", 
 	                           "E_DISK_R_PER_KB", "E_DISK_W_PER_KB", 
@@ -89,6 +90,7 @@ char *mf_start(char *server, char *platform_id, metrics *m)
 	each_metric *each_m = malloc(num_threads * sizeof(each_metric));
 
 	running = 1;
+	keep_local_data_flag = m->local_data_storage;
 
 	for (t = 0; t < num_threads; t++) {
 		/*prepare the argument for the thread*/
@@ -164,6 +166,11 @@ char *mf_send(char *server, char *application_id, char *component_id, char *plat
 		
 		publish_file(metric_URL, static_string, filename);
 
+		/*remove the file if user unset keep_local_data_flag */
+		if(keep_local_data_flag == 0) {
+			unlink(filename);
+		}
+
 		/*get the next entry */
 		drp = readdir(dir);
 		memset(static_string, '\0', 256);	
@@ -172,6 +179,11 @@ char *mf_send(char *server, char *application_id, char *component_id, char *plat
 
 	closedir(dir);
 	fclose(logFile);
+
+	/*remove the data directory if user unset keep_local_data_flag */
+	if(keep_local_data_flag == 0) {
+		rmdir(DataPath);
+	}
 	return experiment_id;
 }
 

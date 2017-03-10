@@ -10,8 +10,6 @@
 //#include "power_monitor.h"
 #include "mf_api.h"
 
-#define SAMPLE_INTERVAL 500
-
 /* some dummy application */
 void dummy(void)
 {
@@ -105,10 +103,11 @@ void Test_resources_monitor(void)
 	int i;
 	metrics m_resources;
 	m_resources.num_metrics = 1;
-	m_resources.sampling_interval[0] = SAMPLE_INTERVAL; // 1s
+	m_resources.local_data_storage = 1;
+	m_resources.sampling_interval[0] = 1000; // 1s
 	strcpy(m_resources.metrics_names[0], "resources_usage");
 
-	char server[] = "192.168.0.2:3040";
+	char server[] = "localhost:3040";
 	char platform_id[] = "fangli_laptop";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
@@ -164,10 +163,11 @@ void Test_disk_monitor(void)
 	int i;
 	metrics m_resources;
 	m_resources.num_metrics = 1;
-	m_resources.sampling_interval[0] = SAMPLE_INTERVAL; // 1s
+	m_resources.local_data_storage = 1;
+	m_resources.sampling_interval[0] = 1000; // 1s
 	strcpy(m_resources.metrics_names[0], "disk_io");
 	
-	char server[] = "192.168.0.2:3040";
+	char server[] = "localhost:3040";
 	char platform_id[] = "fangli_laptop";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
@@ -274,10 +274,11 @@ void Test_power_monitor(void)
 	int i;
 	metrics m_resources;
 	m_resources.num_metrics = 1;
+	m_resources.local_data_storage = 1;
 	m_resources.sampling_interval[0] = 2000; // 2s
 	strcpy(m_resources.metrics_names[0], "power");
 
-	char server[] = "192.168.0.2:3040";
+	char server[] = "localhost:3040";
 	char platform_id[] = "fangli_laptop";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
@@ -296,25 +297,31 @@ void Test_power_monitor(void)
 /*******************************************************************************
  * resources and disk monitor test 
  ******************************************************************************/
-void Test_resources_and_disk(void)
+void Test_all(void)
 {
 	int i;
 	metrics m_resources;
-	m_resources.num_metrics = 2;
-	m_resources.sampling_interval[0] = SAMPLE_INTERVAL; // 1s
+	m_resources.num_metrics = 3;
+	m_resources.local_data_storage = 0;		// to keep the local data files(1) or not(0)
+	m_resources.sampling_interval[0] = 1000; // 1s
 	strcpy(m_resources.metrics_names[0], "resources_usage");
 
-	m_resources.sampling_interval[1] = SAMPLE_INTERVAL; // 1s
+	m_resources.sampling_interval[1] = 1000; // 1s
 	strcpy(m_resources.metrics_names[1], "disk_io");
 
-	char server[] = "192.168.0.2:3040";
+	m_resources.sampling_interval[2] = 2000; // 1s
+	strcpy(m_resources.metrics_names[2], "power");
+
+	char server[] = "localhost:3040";
 	char platform_id[] = "fangli_laptop";
+	char application_id[] = "dummy";
+	char task_id[] = "t1";
 
 	char *datapath = mf_start(server, platform_id, &m_resources);
 	printf("datapath : %s\n", datapath);
 	
 	/*do dummy things*/
-	for(i = 0; i < 20; i++) {
+	for(i = 0; i < 30; i++) {
 		dummy();
 		//sleep(1);
 	}
@@ -323,8 +330,7 @@ void Test_resources_and_disk(void)
 
 	/* when "dummy" application already exists in database, check with /v1/phantom_mf/workflows, 
 	it is possible to send collected metrics to the server */
-	char application_id[] = "dummy";
-	char task_id[] = "t2";
+	
 	char *experiment_id = mf_send(server, application_id, task_id, platform_id);
 	printf("> application_id : %s\n", application_id);
 	printf("> task_id : %s\n", task_id);
@@ -338,7 +344,7 @@ void Test_resources_and_disk(void)
 /*
 void Test_read_config(void)
 {
-	char server[] = "192.168.0.2:3040";
+	char server[] = "localhost:3040";
 	char platform_id[] = "fangli_laptop";
 	get_config_parameters(server, platform_id);
 }
@@ -358,7 +364,7 @@ int main(void)
 	//Test_disk_monitor();		//only disk monitoring
 
 	/* test mf interfaces: mf_start, mf_end, mf_send */	
-	Test_resources_and_disk();	//both resources and disk monitoring
+	Test_all();	//both resources and disk monitoring
 	//Test_power_monitor();
 
 	//Test_CPU_power_read();

@@ -9,9 +9,11 @@ typedef struct metrics_t {
 	long sampling_interval[MAX_NUM_METRICS];	//in milliseconds
 	char metrics_names[MAX_NUM_METRICS][NAME_LENGTH];		//user defined metrics
 	int num_metrics;
+	int local_data_storage;
 } metrics;
 
 extern int running;
+extern int keep_local_data_flag;
 extern char parameters_name[9][32];
 extern float parameters_value[9];
 

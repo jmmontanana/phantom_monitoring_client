@@ -238,6 +238,7 @@ int main() {
 /* MONITORING START */
 	metrics m_resources;
 	m_resources.num_metrics = 2;
+	m_resources.local_data_storage = 1;
 	m_resources.sampling_interval[0] = 1000; // 1s
 	strcpy(m_resources.metrics_names[0], "resources_usage");
 
