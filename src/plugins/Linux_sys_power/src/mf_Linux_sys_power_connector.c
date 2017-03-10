@@ -576,7 +576,7 @@ int load_papi_library(void)
     int ret = PAPI_library_init(PAPI_VER_CURRENT);
     if (ret != PAPI_VER_CURRENT) {
         char *error = PAPI_strerror(ret);
-        fprintf(stderr, "Error while loading the PAPI library: %s", error);
+        fprintf(stderr, "Error while loading the PAPI library: %s\n", error);
         return FAILURE;
     }
 
@@ -594,7 +594,7 @@ int check_rapl_component(void)
         cmpinfo = PAPI_get_component_info(cid);
         if (strstr(cmpinfo->name, "rapl")) {
             if (cmpinfo->disabled) {
-                fprintf(stderr, "Component RAPL is DISABLED");
+                fprintf(stderr, "Component RAPL is DISABLED\n");
                 return FAILURE;
             } else {
                 return SUCCESS;
@@ -663,7 +663,7 @@ int rapl_stat_read(float *ecpu, float *emem)
 	ret = PAPI_read(EventSet, values);
 	if(ret != PAPI_OK) {
 		char *error = PAPI_strerror(ret);
-		fprintf(stderr, "Error while reading the PAPI counters: %s", error);
+		fprintf(stderr, "Error while reading the PAPI counters: %s\n", error);
         return FAILURE;
 	}
 	
