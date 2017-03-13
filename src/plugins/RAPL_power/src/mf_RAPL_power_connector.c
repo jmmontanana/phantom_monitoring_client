@@ -18,8 +18,6 @@
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
-//#include <dirent.h>
-//#include <ctype.h>
 #include <hwloc.h>
 #include <papi.h>
 
@@ -83,14 +81,14 @@ int mf_RAPL_power_sample(Plugin_metrics *data)
 
 	int i, j;
 	for (i = 0; i < data->num_events; ) {
-		if(strstr(data->events[i], "total_power") != NULL) {
+		if((data->events[i] != NULL) && (strstr(data->events[i], "total_power") != NULL)) {
 			for (j = 0; j < num_sockets; j++) {
 				data->values[i] = (epackage_after[j] - epackage_before[j]) / time_interval;	//unit is milliWatt
 				i++;
 				epackage_before[j] = epackage_after[j];
 			}
 		}
-		if(strstr(data->events[ii], "dram_power") != NULL) {
+		if((data->events[i] != NULL) &&(strstr(data->events[i], "dram_power") != NULL)) {
 			for (j = 0; j < num_sockets; j++) {
 				data->values[i] = (edram_after[j] - edram_before[j]) / time_interval;		//unit is milliWatt
 				i++;
@@ -153,7 +151,7 @@ int rapl_init(Plugin_metrics *data, char **events, size_t num_events)
 	}
 
 	/* add for each socket the package energy and dram energy events */
-	int i, j, ii;
+	int i, j, ii = 0;
 	char event_name[32] = {'\0'};
 
 	for (i = 0; i < num_sockets; i++) {
@@ -178,13 +176,12 @@ int rapl_init(Plugin_metrics *data, char **events, size_t num_events)
 		if(strcmp(events[i], "dram_power") == 0) {
 			for (j = 0; j < num_sockets; j++) {
 				data->events[ii] = malloc(MAX_EVENTS_LEN * sizeof(char));
-				sprintf(data->events[ii], "package%d:total_power", j);
+				sprintf(data->events[ii], "package%d:dram_power", j);
 				ii++;
 			}
 		}
 	}
 	data->num_events = ii;
-
 	/* set dominator for DRAM energy values based on different CPU model */
 	denominator = rapl_get_denominator();
 
