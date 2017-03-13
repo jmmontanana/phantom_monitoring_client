@@ -20,10 +20,27 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <ctype.h>
-#include <hwloc.h>
-#include <papi.h>
+#include <unistd.h>
+#include <asm/unistd.h>
+#include <linux/perf_event.h>
 
 #include "mf_Linux_sys_power_connector.h"
+/*
+ **********************************************************************
+ CPU Specification
+ **********************************************************************
+ */
+#define MAX_CPU_POWER 15.0
+#define MIN_CPU_POWER 7.0
+
+/*
+ **********************************************************************
+ Memory Specification
+ **********************************************************************
+ */
+#define MEMORY_POWER 2.016 //in Watts, from my memory module specification
+#define L2CACHE_MISS_LATENCY 59.80 //ns, get use calibrator
+#define L2CACHE_LINE_SIZE 128 //byte get use calibrator
 
 /*
  **********************************************************************
@@ -71,14 +88,13 @@ unsigned int flag = 0;
 double before_time, after_time; 
 
 const char Linux_sys_power_metrics[POWER_EVENTS_NUM][32] = {
-	"power_CPU", "power_mem",
-	"power_net", "power_disk", "power_total" };
+	"estimated_CPU_power", "estimated_wifi_power", 
+	"estimated_memory_power", "estimated_disk_power", "estimated_total_power" };
 
-int EventSet = PAPI_NULL;
-int num_sockets = 0;
-double denominator = 1.0 ; /*according to different CPU models, DRAM energy scalings are different */
-int rapl_is_available = 0;
-float ecpu_before, emem_before, ecpu_after, emem_after;
+int nr_cpus;
+int fd[20];
+float CPU_energy_before, CPU_energy_after;
+unsigned long long memaccess_before, memaccess_after;
 
 struct net_stats {
 	unsigned long long rcv_bytes;
@@ -104,14 +120,10 @@ int process_IO_stat_read(int pid, struct io_stats *io_info);
 float sys_net_energy(struct net_stats *stats_before, struct net_stats *stats_after);
 float sys_disk_energy(struct io_stats *stats_before, struct io_stats *stats_after);
 
-int rapl_init(void);
-int rapl_stat_read(float *ecpu, float *emem);
-int load_papi_library(void);
-int check_rapl_component(void);
-int hardware_sockets_count(void);
-double rapl_get_denominator(void);
-void native_cpuid(unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx);
-
+float CPU_energy_read(void);
+void create_perf_stat_counter(void);
+unsigned long long read_counter(int fd);
+unsigned long long memory_counter_read(void);
 
 /** @brief Initializes the Linux_sys_power plugin
  *
@@ -132,65 +144,68 @@ int mf_Linux_sys_power_init(Plugin_metrics *data, char **events, size_t num_even
 
 	if(flag & HAS_ALL) {
 		data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    	strcpy(data->events[i], "power_total");
-    	/* initialize RAPL counters for CPU and DRAM energy measurement;
-    	   create eventsets */
-    	rapl_is_available = rapl_init();
-    	if(rapl_is_available) {
-    		rapl_stat_read(&ecpu_before, &emem_before);
-    	}
+    	strcpy(data->events[i], "estimated_total_power");
+    	i++;
+
+    	/* read the current cpu energy */
+    	CPU_energy_before = CPU_energy_read();
+
+    	/* init perf counter and read the current memory access times */
+    	create_perf_stat_counter();
+    	memaccess_before = memory_counter_read();
 
     	/* read the current network rcv/send bytes */
     	NET_stat_read(&net_stat_before);
+
     	/* read the current io read/write bytes for all processes */
     	sys_IO_stat_read(&io_stat_before);
-    	i++;
 
     	/* data->events create if other metrics are required */
-    	if((flag & HAS_CPU_STAT) || (flag & HAS_RAM_STAT)) {
+    	if(flag & HAS_CPU_STAT) {
 			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		strcpy(data->events[i], "power_CPU");
-    		i++;
-    		data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		strcpy(data->events[i], "power_mem");
+    		strcpy(data->events[i], "estimated_CPU_power");
     		i++;
 		}
 		if(flag & HAS_NET_STAT) {
 			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-	    	strcpy(data->events[i], "power_net");
+	    	strcpy(data->events[i], "estimated_wifi_power");
     		i++;
 		}
-		if(flag & HAS_IO_STAT) {
+		if((flag & HAS_RAM_STAT) || (flag & HAS_IO_STAT)) {
 			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		strcpy(data->events[i], "power_disk");
+	    	strcpy(data->events[i], "estimated_memory_power");
+    		i++;
+			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
+    		strcpy(data->events[i], "estimated_disk_power");
     		i++;
 		}
 
 	}
 	else {
-		if((flag & HAS_CPU_STAT) || (flag & HAS_RAM_STAT)) {
+		if(flag & HAS_CPU_STAT) {
 			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		strcpy(data->events[i], "power_CPU");
+    		strcpy(data->events[i], "estimated_CPU_power");
     		i++;
-    		data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		strcpy(data->events[i], "power_mem");
-    		i++;
-    		/* initialize RAPL counters if available */
-			rapl_is_available = rapl_init();
-			if(rapl_is_available) {
-    			rapl_stat_read(&ecpu_before, &emem_before);
-    		}
+    		/* read the current cpu energy */
+    		CPU_energy_before = CPU_energy_read();
 		}
 		if(flag & HAS_NET_STAT) {
 			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-	    	strcpy(data->events[i], "power_net");
+	    	strcpy(data->events[i], "estimated_wifi_power");
 	    	i++;
     		/* read the current network rcv/send bytes */
     		NET_stat_read(&net_stat_before);
 		}
-		if(flag & HAS_IO_STAT) {
+		if((flag & HAS_RAM_STAT) || (flag & HAS_IO_STAT)) {
 			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		strcpy(data->events[i], "power_disk");
+	    	strcpy(data->events[i], "estimated_memory_power");
+    		i++;
+    		/* init perf counter and read the current memory access times */
+    		create_perf_stat_counter();
+	    	memaccess_before = memory_counter_read();
+
+			data->events[i] = malloc(MAX_EVENTS_LEN * sizeof(char));	
+    		strcpy(data->events[i], "estimated_disk_power");
     		i++;
 	    	/* read the current io read/write bytes for all processes */
     		sys_IO_stat_read(&io_stat_before);
@@ -224,56 +239,55 @@ int mf_Linux_sys_power_sample(Plugin_metrics *data)
 
 	int i = 0;
 	if(flag & HAS_ALL) {
-		/* get CPU and DRAM energy by rapl read (unit in milliJoule) */
-		if(rapl_is_available) {
-			rapl_stat_read(&ecpu_after, &emem_after);	
-		}
-		ecpu = ecpu_after - ecpu_before;
-		emem = emem_after - emem_before;
-		ecpu_before = ecpu_after;
-		emem_before = emem_after;
+		/* get current CPU energy (unit in milliJoule) */
+		CPU_energy_after = CPU_energy_read();
 		
-		/* get net energy (unit in milliJoule) */
+		/* get current memory access counter value */
+		memaccess_after = memory_counter_read();
+
+		/* get network statistics */
 		NET_stat_read(&net_stat_after);
+
+		/* get disk statistics */
+		sys_IO_stat_read(&io_stat_after);
+
+		/* calculate the energy during the interval (unit in milliJoule) */
+		ecpu = CPU_energy_after - CPU_energy_before;
+		CPU_energy_before = CPU_energy_after;
+
+		emem = ((io_stat_after.read_bytes + io_stat_after.write_bytes - io_stat_before.read_bytes - io_stat_before.write_bytes) / L2CACHE_LINE_SIZE + (memaccess_after - memaccess_before)) *
+						L2CACHE_MISS_LATENCY * MEMORY_POWER * 1.0e-6;
+		memaccess_before = memaccess_after;
+
 		enet = sys_net_energy(&net_stat_before, &net_stat_after);
 
-		/* get disk energy (unit in milliJoule) */
-		sys_IO_stat_read(&io_stat_after);
 		edisk = sys_disk_energy(&io_stat_before, &io_stat_after);
 
 		/* get total energy via addition; calculate average power during the time interval */
 		data->values[i] = (ecpu + emem + enet + edisk) / time_interval;
 		i++;
 		/* assign values to the data->values according to the flag (unit in mW)*/
-		if((flag & HAS_CPU_STAT) || (flag & HAS_RAM_STAT)) {
+		if(flag & HAS_CPU_STAT) {
 			data->values[i] = ecpu / time_interval;
 			i++;
-    		data->values[i] = emem / time_interval;
-    		i++;
 		}
 		if(flag & HAS_NET_STAT) {
 			data->values[i] = enet / time_interval;
 			i++;
 		}
-		if(flag & HAS_IO_STAT) {
+		if((flag & HAS_RAM_STAT) || (flag & HAS_IO_STAT)) {
+			data->values[i] = emem / time_interval;
+    		i++;
 			data->values[i] = edisk / time_interval;
 			i++;
 		}
 	}
 	else {
-		if((flag & HAS_CPU_STAT) || (flag & HAS_RAM_STAT)) {
-			/* get CPU and DRAM energy by rapl read (unit in milliJoule) */
-			if(rapl_is_available) {
-				rapl_stat_read(&ecpu_after, &emem_after);	
-			}
-			ecpu = ecpu_after - ecpu_before;
-			emem = emem_after - emem_before;
-			ecpu_before = ecpu_after;
-			emem_before = emem_after;
-
+		if(flag & HAS_CPU_STAT) {
+			CPU_energy_after = CPU_energy_read();
+			ecpu = CPU_energy_after - CPU_energy_before;
+			CPU_energy_before = CPU_energy_after;
 			data->values[i] = ecpu / time_interval;
-			i++;
-			data->values[i] = emem / time_interval;
 			i++;
 		}
 		if(flag & HAS_NET_STAT) {
@@ -283,9 +297,16 @@ int mf_Linux_sys_power_sample(Plugin_metrics *data)
 			data->values[i] = enet / time_interval;
 			i++;
 		}
-		if(flag & HAS_IO_STAT) {
-			/* get disk energy (unit in milliJoule) */
+		if((flag & HAS_RAM_STAT) || (flag & HAS_IO_STAT)) {
+			memaccess_after = memory_counter_read();
 			sys_IO_stat_read(&io_stat_after);
+
+			emem = ((io_stat_after.read_bytes + io_stat_after.write_bytes - io_stat_before.read_bytes - io_stat_before.write_bytes) / L2CACHE_LINE_SIZE + (memaccess_after - memaccess_before)) *
+						L2CACHE_MISS_LATENCY * MEMORY_POWER * 1.0e-6;
+			memaccess_before = memaccess_after;
+			data->values[i] = emem / time_interval;
+			i++;
+
 			edisk = sys_disk_energy(&io_stat_before, &io_stat_after);
 			data->values[i] = edisk / time_interval;
 			i++;
@@ -318,11 +339,11 @@ void mf_Linux_sys_power_to_json(Plugin_metrics *data, char *json)
      */
 	for (i = 0; i < data->num_events; i++) {
 		/* if metrics' name is power_CPU, but flag do not HAS_CPU_STAT, ignore the value*/
-		if(strcmp(data->events[i], "power_CPU") == 0 && !(flag & HAS_CPU_STAT))
+		if(strcmp(data->events[i], "estimated_memory_power") == 0 && !(flag & HAS_RAM_STAT))
 			continue;
 
 		/* if metrics' name is power_mem, but flag do not HAS_RAM_STAT, ignore the value*/
-		if(strcmp(data->events[i], "power_mem") == 0 && !(flag & HAS_RAM_STAT))
+		if(strcmp(data->events[i], "estimated_disk_power") == 0 && !(flag & HAS_IO_STAT))
 			continue;
 
 		/* if metrics' value >= 0.0, append the metrics to the json string */
@@ -512,168 +533,124 @@ float sys_disk_energy(struct io_stats *stats_before, struct io_stats *stats_afte
 	return edisk;
 }
 
-/* initialize RAPL counters prepare eventset and start counters */
-int rapl_init(void) {
+/* get the cpu freq counting and return the cpu energy since the last call of the function */
+float CPU_energy_read(void) 
+{
+	/* 
+	  read the system cpu energy based on given max- and min- cpu energy, and frequencies statistics 
+	 */
+	FILE *fp;
+	char line[32] = {'\0'};
+	DIR *dir;
+	int i, max_i;
+	struct dirent *dirent;
+	char cpu_freq_file[128] = {'\0'};
+	
+	float energy_each, energy_total;
+	unsigned long long tmp;
+	unsigned long long freqs[16];
 
-	/* Load PAPI library */
-	if (!load_papi_library()) {
-        return FAILURE;
-    }
-
-    /* check if rapl component is enabled */
-    if (!check_rapl_component()) {
-        return FAILURE;
-    }
-
-    /* get the number of sockets */
-    num_sockets = hardware_sockets_count();
-    if(num_sockets <= 0) {
-    	return FAILURE;
-    }
-
-	/* creat an PAPI EventSet */
-	if (PAPI_create_eventset(&EventSet) != PAPI_OK) {
-		fprintf(stderr, "Error: PAPI_create_eventset failed.\n");
-		return FAILURE;
+	/* 
+	  check if system support cpu freq counting 
+	 */
+	fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state", "r");
+	if(fp == NULL) {
+		printf("ERROR: CPU frequency statistics are not supported.\n");
+		return 0.0;
 	}
 
-	/* add for each socket the package energy and dram energy events */
-	int i, ret;
-	char event_name[32] = {'\0'};
+	energy_total = 0.0;
+	float power_range = MAX_CPU_POWER - MIN_CPU_POWER;
 
-	for (i = 0; i < num_sockets; i++) {
-		memset(event_name, '\0', 32 * sizeof(char));
-		sprintf(event_name, "PACKAGE_ENERGY:PACKAGE%d", i);
-		ret = PAPI_add_named_event(EventSet, event_name);
-		if (ret != PAPI_OK) {
-			fprintf(stderr, "Error: Couldn't add event: %s\n", event_name);
+	dir = opendir("/sys/devices/system/cpu");
+	if(!dir) {
+		printf("ERROR: Could not open directory /sys/devices/system/cpu\n");
+		return 0.0;
+	}
+
+	while ((dirent = readdir(dir))) {
+		/* for each entry name starting by cpuxx */
+		if (strncmp(dirent->d_name,"cpu", 3) != 0)
+			continue;
+		sprintf(cpu_freq_file, "/sys/devices/system/cpu/%s/cpufreq/stats/time_in_state", dirent->d_name);
+		fp = fopen(cpu_freq_file, "r");
+
+		if(!fp)
+			continue;
+
+		for (i = 0; !feof(fp) && (i <= 15); i++) {
+			if(fgets(line, 32, fp) == NULL)
+				break;
+			sscanf(line, "%llu %llu", &tmp, &freqs[i]);
+			/* each line has a pair like "<frequency> <time>", which means this CPU spent <time> usertime at <frequency>.
+			   unit of <time> is 10ms
+			 */
 		}
-		memset(event_name, '\0', 32 * sizeof(char));
-		sprintf(event_name, "DRAM_ENERGY:PACKAGE%d", i);
-		ret = PAPI_add_named_event(EventSet, event_name);
-		if (ret != PAPI_OK) {
-			fprintf(stderr, "Error: Couldn't add event: %s\n", event_name);
+
+		max_i = i - 1;
+		fclose(fp);
+
+		for (i = 0; i <= max_i; i++) {
+			energy_each = (MAX_CPU_POWER - power_range * i / max_i) * freqs[i] * 10.0; // in milliJoule
+			energy_total += energy_each; 
 		}
 	}
-	/* set dominator for DRAM energy values based on different CPU model */
-	denominator = rapl_get_denominator();
 
-	if (PAPI_start(EventSet) != PAPI_OK) {
-		fprintf(stderr, "PAPI_start failed.\n");
-		return FAILURE;
+	closedir(dir);
+	return energy_total;
+}
+
+/* init perf counter for hardware cache misses 
+   return the file descriptor for further read operations */
+void create_perf_stat_counter(void)
+{
+	/* get the nubmer of CPUs */
+	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+
+	struct perf_event_attr attr; //cache miss
+	memset(&attr, 0, sizeof(struct perf_event_attr));
+	attr.type =	PERF_TYPE_HARDWARE; 
+  	attr.config = PERF_COUNT_HW_CACHE_MISSES;
+  	attr.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING;
+  	attr.inherit = 1;
+  	attr.disabled = 0;
+	attr.enable_on_exec = 1;
+	attr.size = sizeof(attr);
+	
+	/* This measures the specified process/thread on any CPU;
+	   return the file descriptor for the counter */
+	int i;
+	for (i = 0; i < nr_cpus; i++) {
+		fd[i] = syscall(__NR_perf_event_open, &attr, -1, i, -1, 0);
 	}
-
-	return SUCCESS;
 }
 
-/* Load the PAPI library */
-int load_papi_library(void)
+/* read the perf counter from the file descriptor */
+unsigned long long read_counter(int fd)
 {
-    if (PAPI_is_initialized()) {
-        return SUCCESS;
-    }
+	unsigned long long single_count[3];
+	size_t res;
 
-    int ret = PAPI_library_init(PAPI_VER_CURRENT);
-    if (ret != PAPI_VER_CURRENT) {
-        char *error = PAPI_strerror(ret);
-        fprintf(stderr, "Error while loading the PAPI library: %s\n", error);
-        return FAILURE;
-    }
+	if (fd <= 0)
+		return 0;
 
-    return SUCCESS;
-}
+	res = read(fd, single_count, 3 * sizeof(unsigned long long));
 
-/* Check if rapl component is enabled */
-int check_rapl_component(void)
-{
-	int numcmp, cid; /* number of component and component id variables declare */
-	const PAPI_component_info_t *cmpinfo = NULL;
-
-	numcmp = PAPI_num_components();
-    for (cid = 0; cid < numcmp; cid++) {
-        cmpinfo = PAPI_get_component_info(cid);
-        if (strstr(cmpinfo->name, "rapl")) {
-            if (cmpinfo->disabled) {
-                fprintf(stderr, "Component RAPL is DISABLED\n");
-                return FAILURE;
-            } else {
-                return SUCCESS;
-            }
-        }
-    }
-    return FAILURE;
-}
-
-/* Count the number of available sockets by hwloc library. 
- * return the number of sockets on success; 0 otherwise
- */
-int hardware_sockets_count(void)
-{
-	int depth;
-	int skts_num = 0;
-	hwloc_topology_t topology;
-	hwloc_topology_init(&topology);
-	hwloc_topology_load(topology);
-	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET);
-	if (depth == HWLOC_TYPE_DEPTH_UNKNOWN) {
-		fprintf(stderr, "Error: The number of sockets is unknown.\n");
+	if(res == 3 * sizeof(unsigned long long)) {
+		return single_count[0];
+	}
+	else {
 		return 0;
 	}
-	skts_num = hwloc_get_nbobjs_by_depth(topology, depth);
-	return skts_num;
 }
 
-/*get the coefficient of current CPU model */
-double rapl_get_denominator(void)
+unsigned long long memory_counter_read(void) 
 {
-	/* get cpu model */
-    unsigned int eax, ebx, ecx, edx;
-    eax = 1;
-    native_cpuid(&eax, &ebx, &ecx, &edx);
-    int cpu_model = (eax >> 4) & 0xF;
+	int i;
+	unsigned long long result;
 
-    if (cpu_model == 15) {
-        return 15.3;
-    } else {
-        return 1.0;
-    }
-
-}
-
-/* Get native cpuid */
-void native_cpuid(unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx)
-{
-    asm volatile("cpuid"
-        : "=a" (*eax),
-          "=b" (*ebx),
-          "=c" (*ecx),
-          "=d" (*edx)
-        : "0" (*eax), "2" (*ecx)
-    );
-}
-
-/* Read rapl counters values, computer the energy values for CPU and DRAM; (in milliJoule)
-   counters are reset after read */
-int rapl_stat_read(float *ecpu, float *emem) 
-{
-	int i, ret;
-	long long *values = malloc(2 * num_sockets * sizeof(long long));
-	float e_package_temp = 0.0, e_dram_temp = 0.0;
-
-	ret = PAPI_read(EventSet, values);
-	if(ret != PAPI_OK) {
-		char *error = PAPI_strerror(ret);
-		fprintf(stderr, "Error while reading the PAPI counters: %s\n", error);
-        return FAILURE;
+	for (i = 0; i < nr_cpus; i++) {
+		result += read_counter(fd[i]);
 	}
-	
-	for(i = 0; i < num_sockets * 2; i++) {
-		e_package_temp += (float) (values[i] * 1.0e-6);
-		i++;
-		e_dram_temp += (float) (values[i] * 1.0e-6 ) / denominator;
-	}
-	PAPI_reset(EventSet);
-	*ecpu = e_package_temp;
-	*emem = e_dram_temp;
-	return SUCCESS;
+	return result;
 }
