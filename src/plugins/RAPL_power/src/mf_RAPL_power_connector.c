@@ -43,8 +43,7 @@ float epackage_before[4], edram_before[4], epackage_after[4], edram_after[4]; //
 /*******************************************************************************
  * Forward Declarations
  ******************************************************************************/
-int events_are_all_not_valid(char **events, size_t num_events);
-int rapl_init(Plugin_metrics *data);
+int rapl_init(Plugin_metrics *data, char **events, size_t num_events);
 int load_papi_library(void);
 int check_rapl_component(void);
 int hardware_sockets_count(void);
@@ -55,11 +54,7 @@ int rapl_stat_read(float *epackage, float *edram);
 
 int mf_RAPL_power_init(Plugin_metrics *data, char **events, size_t num_events)
 {
-	if (events_are_all_not_valid(events, num_events)) {
-		return FAILURE;
-	}
-
-	rapl_is_available = rapl_init(data);
+	rapl_is_available = rapl_init(data, events, num_events);
 	if(rapl_is_available == 0 || data->num_events == 0) {
 		return FAILURE;
 	}
@@ -85,17 +80,22 @@ int mf_RAPL_power_sample(Plugin_metrics *data)
 	if(rapl_is_available) {
 		rapl_stat_read(epackage_after, edram_after);	
 	}
-	int i, ii = 0;
-	for(i = 0; i < num_sockets; i++) {
-		if(strstr(data->events[ii], "total_power") != NULL) {
-			data->values[ii] = (epackage_after[i] - epackage_before[i]) / time_interval;	//unit is milliWatt
-			ii++;
-			epackage_before[i] = epackage_after[i];
+
+	int i, j;
+	for (i = 0; i < data->num_events; ) {
+		if(strstr(data->events[i], "total_power") != NULL) {
+			for (j = 0; j < num_sockets; j++) {
+				data->values[i] = (epackage_after[j] - epackage_before[j]) / time_interval;	//unit is milliWatt
+				i++;
+				epackage_before[j] = epackage_after[j];
+			}
 		}
 		if(strstr(data->events[ii], "dram_power") != NULL) {
-			data->values[ii] = (edram_after[i] - edram_before[i]) / time_interval;		//unit is milliWatt
-			ii++;
-			edram_before[i] = edram_after[i];
+			for (j = 0; j < num_sockets; j++) {
+				data->values[i] = (edram_after[j] - edram_before[j]) / time_interval;		//unit is milliWatt
+				i++;
+				edram_before[j] = edram_after[j];
+			}
 		}
 	}
 
@@ -127,31 +127,8 @@ void mf_RAPL_power_to_json(Plugin_metrics *data, char *json)
 	}
 }
 
-int events_are_all_not_valid(char **events, size_t num_events) 
-{
-	int i, counter;
-	counter = 0; 
-	for (i = 0; i < num_events; i++) {
-		/* if events name matches, counter is incremented by 1 */
-		if(strcmp(events[i], "total_power") == 0) {
-			counter++;
-		}
-		if(strcmp(events[i], "dram_power") == 0) {
-			counter++;
-		}
-
-	}
-	if (counter == 0) {
-		fprintf(stderr, "Wrong given metrics.\nPlease given metrics total_power, dram_power.\n");
-		return 1;
-	}
-	else {
-		return 0;
-	}
-}
-
 /* initialize RAPL counters prepare eventset and start counters */
-int rapl_init(Plugin_metrics *data) 
+int rapl_init(Plugin_metrics *data, char **events, size_t num_events) 
 {
 	/* Load PAPI library */
 	if (!load_papi_library()) {
@@ -176,31 +153,38 @@ int rapl_init(Plugin_metrics *data)
 	}
 
 	/* add for each socket the package energy and dram energy events */
-	int i, ii, ret;
-	ii = 0;
+	int i, j, ii;
 	char event_name[32] = {'\0'};
 
 	for (i = 0; i < num_sockets; i++) {
 		memset(event_name, '\0', 32 * sizeof(char));
 		sprintf(event_name, "PACKAGE_ENERGY:PACKAGE%d", i);
-		ret = PAPI_add_named_event(EventSet, event_name);
-		if (ret == PAPI_OK) {
-			data->events[ii] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		sprintf(data->events[ii], "package[%d]:total_power", i);
-    		ii++;
-		}
-		
+		PAPI_add_named_event(EventSet, event_name);
+
 		memset(event_name, '\0', 32 * sizeof(char));
 		sprintf(event_name, "DRAM_ENERGY:PACKAGE%d", i);
-		ret = PAPI_add_named_event(EventSet, event_name);
-		if (ret == PAPI_OK) {
-			data->events[ii] = malloc(MAX_EVENTS_LEN * sizeof(char));	
-    		sprintf(data->events[ii], "package[%d]:dram_power", i);
-    		ii++;
-		}
+		PAPI_add_named_event(EventSet, event_name);		
 	}
 
+	/* create data events according to given metrics */
+	for (i = 0; i < num_events; i++) {
+		if(strcmp(events[i], "total_power") == 0) {
+			for (j = 0; j < num_sockets; j++) {
+				data->events[ii] = malloc(MAX_EVENTS_LEN * sizeof(char));
+				sprintf(data->events[ii], "package%d:total_power", j);
+				ii++;
+			}
+		}
+		if(strcmp(events[i], "dram_power") == 0) {
+			for (j = 0; j < num_sockets; j++) {
+				data->events[ii] = malloc(MAX_EVENTS_LEN * sizeof(char));
+				sprintf(data->events[ii], "package%d:total_power", j);
+				ii++;
+			}
+		}
+	}
 	data->num_events = ii;
+
 	/* set dominator for DRAM energy values based on different CPU model */
 	denominator = rapl_get_denominator();
 
@@ -303,7 +287,7 @@ void native_cpuid(unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsig
    counters are reset after read */
 int rapl_stat_read(float *epackage, float *edram) 
 {
-	int i, ret;
+	int i, ii, ret;
 	long long *values = malloc(2 * num_sockets * sizeof(long long));
 
 	ret = PAPI_read(EventSet, values);
@@ -313,10 +297,11 @@ int rapl_stat_read(float *epackage, float *edram)
         return FAILURE;
 	}
 	
-	for(i = 0; i < num_sockets * 2; i++) {
-		epackage[i] = (float) (values[i] * 1.0e-6);
+	for(i = 0, ii = 0; ii < num_sockets; ii++) {
+		epackage[ii] = (float) (values[i] * 1.0e-6);
 		i++;
-		edram[i] = (float) (values[i] * 1.0e-6 ) / denominator;
+		edram[ii] = (float) (values[i] * 1.0e-6 ) / denominator;
+		i++;
 	}
 	PAPI_reset(EventSet);
 	
