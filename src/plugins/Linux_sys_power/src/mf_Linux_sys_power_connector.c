@@ -28,19 +28,20 @@
 /*
  **********************************************************************
  CPU Specification
+  - power per core
  **********************************************************************
  */
-#define MAX_CPU_POWER 15.0
-#define MIN_CPU_POWER 7.0
+#define MAX_CPU_POWER 3.9
+#define MIN_CPU_POWER 1.079
 
 /*
  **********************************************************************
  Memory Specification
  **********************************************************************
  */
-#define MEMORY_POWER 2.016 //in Watts, from my memory module specification
+#define MEMORY_POWER 3.2 //in Watts, from my memory module specification
 #define L2CACHE_MISS_LATENCY 59.80 //ns, get use calibrator
-#define L2CACHE_LINE_SIZE 128 //byte get use calibrator
+#define L2CACHE_LINE_SIZE 64 //byte get use calibrator
 
 /*
  **********************************************************************
@@ -72,9 +73,9 @@
 #define NET_STAT_FILE "/proc/net/dev"
 #define IO_STAT_FILE "/proc/%d/io"
 
-#define HAS_CPU_STAT 0x01 
-#define HAS_RAM_STAT 0x02
-#define HAS_NET_STAT 0x04
+#define HAS_CPU_STAT 0x01
+#define HAS_NET_STAT 0x02 
+#define HAS_RAM_STAT 0x04
 #define HAS_IO_STAT 0x08
 #define HAS_ALL 0x10
 

@@ -5,9 +5,9 @@ CC = gcc
 COPT_SO = ${CFLAGS} -fpic
 
 CFLAGS = -std=gnu99 -pedantic -Wall -Wwrite-strings  -Wpointer-arith -Wcast-align -O0 -ggdb \
--I${SRC} ${HWLOC_INC} ${PAPI_INC} ${PARSER_INC} ${UTILS_INC} ${AGENT_INC} ${EXCESS_QUEUE_INC} ${CORE_INC}
+-I${SRC} ${PARSER_INC} ${UTILS_INC} ${AGENT_INC} ${EXCESS_QUEUE_INC} ${CORE_INC}
 
-LFLAGS = -lrt -ldl -Wl,-rpath,${HWLOC_PATH}:${PAPI_PATH} ${HWLOC_LIB} ${PAPI_LIB}
+LFLAGS = -lrt -ldl
 
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
