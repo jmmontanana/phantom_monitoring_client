@@ -39,6 +39,7 @@ int main(int argc, char** argv)
     sigIntHandler.sa_handler = my_exit_handler;
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
+    sigaction(SIGTERM, &sigIntHandler, NULL);
     sigaction(SIGINT, &sigIntHandler, NULL);
 
     /*default sampling interval: 1 second */
