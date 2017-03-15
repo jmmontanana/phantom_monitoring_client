@@ -80,7 +80,7 @@ int main(int argc, char** argv)
         /*
          * Display and free the json string
          */
-        puts(json);
+        printf("%s\n",json);
         free(json);
 
     } while (1);

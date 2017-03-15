@@ -40,8 +40,8 @@
  **********************************************************************
  */
 #define MEMORY_POWER 3.2 //in Watts, from my memory module specification
-#define L2CACHE_MISS_LATENCY 59.80 //ns, get use calibrator
-#define L2CACHE_LINE_SIZE 64 //byte get use calibrator
+#define L2CACHE_MISS_LATENCY 2.09 //ns, get use calibrator
+#define L2CACHE_LINE_SIZE 256 //byte get use calibrator
 
 /*
  **********************************************************************
