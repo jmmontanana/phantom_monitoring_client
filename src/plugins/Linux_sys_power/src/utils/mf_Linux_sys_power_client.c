@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
     /*default sampling interval: 1 second */
     struct timespec profile_time = { 0, 0 };
-    profile_time.tv_sec = 2;
+    profile_time.tv_sec = 1;
     profile_time.tv_nsec = 0;
 
     ++argv;
