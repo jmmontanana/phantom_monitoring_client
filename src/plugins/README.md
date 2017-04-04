@@ -1,8 +1,7 @@
 # Introduction of plugins and usage information
 
 ## Introduction
-
-The monitoring client is composed of 6 plugins, monitoring all kinds of the system infrastructure-level performance and power metrics. The plugins implemented are based on various libraries, system hardware counters and Linux proc filesystem. In addition to be used by the monitoring client, each plugin can be built as a standalone client, being executed alone with given specific metrics name. 
+The monitoring client is composed of 7 plugins, monitoring all kinds of the system infrastructure-level performance and power metrics. The plugins implemented are based on various libraries, system hardware counters and Linux proc filesystem. In addition to be used by the monitoring client, each plugin can be built as a standalone client, being executed alone with given specific metrics name. 
 
 More details about each plugin, for example, the plugins' usage, prerequisites and supported metrics are all clarified in the following.
 
@@ -14,6 +13,7 @@ More details about each plugin, for example, the plugins' usage, prerequisites a
 - Linux_resources
 - Linux_sys_power
 - NVML
+- RAPL_power
 
 ## Board_power Plugin
 
@@ -92,7 +92,7 @@ Replace **<LIST_OF_CPU_perf_METRICS>** with a space-separated list of the follow
 - MFLOPS
 - MIPS
 
-Unit and description for each metric is showed in the following table:
+It is noted that the default number of cores for the application mf_CPU_perf_client is 10. Unit and description for each metric is showed in the following table:
 
 | Metrics    | Units    | Description   |
 |----------- |--------  |-------------  |
@@ -160,18 +160,21 @@ Replace **<LIST_OF_Linux_resources_METRICS>** with a space-separated list of the
 
 Unit and description for each metric is showed in the following table:
 
-| Metrics         | Units    | Description   |
-|---------------- |--------- |-------------  |
-| CPU_usage_rate  | %        | percentage of CPU usage time |
-| RAM_usage_rate  | %        | percentage of used RAM size |
-| swap_usage_rate | %        | percentage of used swap size |
+| Metrics         | Units    | Description                                                   |
+|---------------- |--------- |-------------------------------------------------------------  |
+| CPU_usage_rate  | %        | percentage of CPU usage time                                  |
+| RAM_usage_rate  | %        | percentage of used RAM size                                   |
+| swap_usage_rate | %        | percentage of used swap size                                  |
 | net_throughput  | bytes/s  | total send and receive bytes via wlan and ethernet per second |
-| io_throughput   | bytes/s  | total disk read and write bytes per second |
+| io_throughput   | bytes/s  | total disk read and write bytes per second                    |
 
 
 ## Linux_sys_power Plugin
 
-This plugin is based on both the PAPI library (with RAPL component) and the Linux proc filesystem. The PAPI library is installed during the monitoring client setup process, done by the setup.sh shell script. In case that the PAPI library is not found or the RAPL component is not enabled, the plugin will fail at the initialization stage. For accurate power measurement of the system network and disk component, it is advised to adjust the values (E_NET_SND_PER_KB, E_NET_RCV_PER_KB, E_DISK_R_PER_KB, E_DISK_W_PER_KB), as defined in **src/mf_Linux_sys_power_connector.c** according to the network and disk sepcification. To be noticed, the system wired network power consumption is not considered by this plugin.
+This plugin is based on the Linux proc filesystem and some system drivers and libraries. The CPU power consumption is estimated by using a Linux module named as cpufreq-stats [cpufreq-stats][cpufreq-stats-module]. It is a driver that provides CPU frequency statistics for each CPU through its interface, which appears normally in the directory /sysfs/devices/system/cpu/cpuX/cpufreq/stats. For memory power estimation, we uses the system call “__NR_perf_event_open” to stat the hardware cache misses [perf-event][perf-event-open]. Together with reading the disk I/O read/write statistics, we calculate the memory power consumption with the following formula. The L2 cache miss latency and L2 cache line size can be obtained via some known calibrator [l2-calibrator][caliborator]. Disk and wireless network power consumptions are calculated based on their activities, like read/write and receive/send bytes during the sampling interval. As long as the energy specifications of the disk and wireless network card are given, we could compute the constants, like energy cost per disk read/write and energy cost per wireless network receive/send (E_DISK_R_PER_KB, E_DISK_W_PER_KB, E_NET_SND_PER_KB, E_NET_RCV_PER_KB), and get finally the energy consumed during a specific period.
+
+Please refer to the pTop project for more design and methodology details [PTOP][ptop].
+
 
 ### Usage and metrics
 
@@ -179,12 +182,6 @@ The Linux_sys_power plugin can be built and ran alone, outside the monitoring fr
 
 ```
 $ make all
-```
-
-, before calling the generated sampling client **mf_Linux_sys_power_client**, please add the required libraries to the **LD_LIBRARY_PATH** by:
-
-```
-$ source setenv.sh
 ```
 
 It is advised to run the sampling client **mf_Linux_sys_power_client** with root permissions, like:
@@ -195,37 +192,40 @@ $ ./mf_Linux_sys_power_client <LIST_OF_Linux_sys_power_METRICS>
 
 Replace **<LIST_OF_Linux_sys_power_METRICS>** with a space-separated list of the following events:
 
-- power_CPU
-- power_mem
-- power_net
-- power_disk
-- power_total
+- estimated_CPU_power
+- estimated_memory_power
+- estimated_wifi_power
+- estimated_disk_power
+- estimated_total_power
 
 Unit and description for each metric is showed in the following table:
 
-| Metrics      | Units      | Description   |
-|------------- |----------  |-------------  |
-| power_CPU    | milliwatts | CPU package power, which is measured using the RAPL PACKAGE_ENERGY event |
-| power_mem    | milliwatts | DRAM power, which is measured using the RAPL DRAM_ENERGY event |
-| power_net    | milliwatts | wireless network power, which is calcuated with given variables (E_NET_SND_PER_KB, E_NET_RCV_PER_KB) and monitored send and receive bytes via the wireless card |
-| power_disk   | milliwatts | disk power, which is calcuated with given variables (E_DISK_R_PER_KB, E_DISK_W_PER_KB) and monitored read and write bytes via disk |
-| power_total  | milliwatts | total system power, calculated by the addition of the abover metrics |
+| Metrics                | Units      | Description                                                          |
+|----------------------- |----------  |--------------------------------------------------------------------  |
+| estimated_CPU_power    | milliwatts | Estimated CPU power consumption                                      |
+| estimated_memory_power | milliwatts | Main memory power, which is estimated using the system calls         |
+| estimated_wifi_power   | milliwatts | Estimated wireless network power                                     |
+| estimated_disk_power   | milliwatts | Estimated disk power                                                 |
+| estimated_total_power  | milliwatts | Total system power, calculated by the addition of the abover metrics |
 
 
 ## NVML Plugin
 
-This plugin is based on the nvml (NVIDIA management library), which is a C-based API for monitoring various states of the NVIDIA GPU devices. It is required to use the library **libnvidia-ml.so**, which is installed with the NVIDIA Display Driver, therefore the default library path (/usr/lib64 or /usr/lib) is used to link and build the plugin. During the monitoring setup process, done the setup.sh shell script, the NVIDIA SDK with appropriate header file is installed.
+This plugin is based on the nvml (NVIDIA management library)[NVML][nvml], which is a C-based API for monitoring various states of the NVIDIA GPU devices. It is required to use the library **libnvidia-ml.so**, which is installed with the NVIDIA Display Driver, therefore the default library path (/usr/lib64 or /usr/lib) is used to link and build the plugin. During the monitoring setup process, done the setup.sh shell script, the NVIDIA SDK with appropriate header file is installed.
 
 ### Usage and metrics
 
 The NVML plugin can be built and ran alone, outside the monitoring framework. In the directory of the plugin, execute the **Makefile** using
-
 ```
 $ make all
 ```
 
-will build the standalone executable client **mf_NVML_client**. It is advised to run the sampling client with root permissions like the follows:
+will build the standalone executable client **mf_NVML_client**. Before calling the generated sampling client **mf_CPU_temperature_client**, please add the required libraries to the **LD_LIBRARY_PATH** by:
+```
+$ source setenv.sh
+```
 
+It is advised to run the sampling client with root permissions like the follows:
 ```
 $ ./mf_NVML_client <LIST_OF_NVML_METRICS>
 ```
@@ -252,3 +252,44 @@ All the metrics above is reported per GPU device. Unit and description for each 
 | PCIe_rcv_throughput | bytes/s    | PCIe write bytes per second (for Maxwell or newer architecture) |
 | temperature         | °c         | GPU device temperature |
 | power               | milliwatts | GPU device power consumption |
+
+
+## RAPL_power Plugin
+
+This plugin is implemented for Intel CPU power measurements, as using RAPL provided energy and power information [RAPL][rapl]. In general cases, RAPL reports energy measurements per CPU socket covering basically two domains: the CPU package (including core and uncore devices) and the DRAM. 
+
+### Usage and metrics
+
+The RAPL_power plugin can be built and ran alone, outside the monitoring framework. In the directory of the plugin, execute the **Makefile** using 
+```
+$ make all
+```
+
+will build the standalone executable client **mf_RAPL_power_client**. Before calling the generated sampling client, please add the required libraries to the **LD_LIBRARY_PATH** by:
+```
+$ source setenv.sh
+```
+
+It is advised to run the sampling client with root permissions like the following:
+```
+$ ./mf_RAPL_power_client <LIST_OF_RAPL_POWER_METRICS>
+```
+
+Replace **<LIST_OF_RAPL_POWER_METRICS>** with a space-separated list of the following events:
+- total_power
+- dram_power
+
+All the metrics above is reported per CPU socket. Unit and description for each metric is showed in the following table:
+
+| Metrics             | Units      | Description   |
+|-------------------- |----------- |-------------  |
+| total_power         | milliwatts | Total CPU package power |
+| dram_power          | milliwatts | Total DRAM power |
+
+
+[cpufreq-stats-module]: https://www.kernel.org/doc/Documentation/cpu-freq/cpufreq-stats.txt
+[perf-event-open]: http://man7.org/linux/man-pages/man2/perf_event_open.2.html
+[caliborator]: http://homepages.cwi.nl/~manegold/Calibrator/calibrator.shtml
+[ptop]: http://mist.cs.wayne.edu/ptop.html
+[nvml]: https://developer.nvidia.com/nvidia-management-library-nvml
+[rapl]: https://01.org/zh/blogs/2014/running-average-power-limit-%E2%80%93-rapl?langredirect=1

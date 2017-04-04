@@ -16,7 +16,7 @@
 
 usage() {
     cat <<EOF
-Usage: $0 [a:e:t:h]
+Usage: $0 [a:t:h]
 
 -h                  prints this usage information.
 
