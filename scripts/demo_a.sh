@@ -19,7 +19,7 @@
 #
 APPLICATION_ID="dummy"
 TASK_ID="t1"
-MF_SERVER="192.168.0.2:3040"
+MF_SERVER="141.58.0.8:3033"
 METRIC_NAME="power_total"
 
 #

@@ -19,7 +19,7 @@
 #
 APPLICATION_ID="dummy" #should be same as given in the application
 TASK_ID="t2" #should be same as given in the application
-MF_SERVER="192.168.0.2:3040" #should be same as given in the application
+MF_SERVER="141.58.0.8:3033" #should be same as given in the application
 METRIC_NAME="CPU_usage_rate"
 
 #
