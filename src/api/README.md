@@ -26,7 +26,7 @@ Function **mf_user_metric** sends user-defined metrics with given metric’s nam
 ## Application example
 The above mentioned APIs can be used by a generic application for code instrumentation. Following is a part of an application's source code (written in C++), which is used here to clarify how to use the client APIs. 
 
-As specified by the programmer, if all preconditions are statisfied by the target platform, we can gather power and performance metrics about CPU, memory, disk I/O and network devices, as defined in the variable **m_resources**. In addition to these predefined metrics, users are able to send also user-defined metrics to the MF server. Take the following source code as an example, the user-defined metrics are **duration** and "nrLoops", which represent the execution duration for each simulation and the number of total simulation loops respectively.
+As specified by the programmer, if all preconditions are statisfied by the target platform, we can gather power and performance metrics about CPU, memory, disk I/O and network devices, as defined in the variable **m_resources**. In addition to these predefined metrics, users are able to send also user-defined metrics to the MF server. Take the following source code as an example, the user-defined metrics are **duration** and **nrLoops**, which represent the execution duration for each simulation and the number of total simulation loops respectively.
 
 ```
 #include ...

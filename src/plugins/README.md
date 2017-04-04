@@ -56,10 +56,10 @@ Unit and description for each metric is showed in the following table:
 
 | Metrics         | Units  | Description   |
 |---------------- |------  |-------------  |
-| device0:current | mA     | current measured for the target board |
-| device0:vshunt  | mV     | shunt voltage drop |
-| device0:vbus    | mV     | bus supply voltage |
-| device0:power   | mW     | power measured for the target board |
+| device0:current | mA     | Current measured for the target board |
+| device0:vshunt  | mV     | Shunt voltage drop |
+| device0:vbus    | mV     | Bus supply voltage |
+| device0:power   | mW     | Power measured for the target board |
 
 
 ## CPU_perf Plugin
@@ -96,9 +96,9 @@ It is noted that the default number of cores for the application mf_CPU_perf_cli
 
 | Metrics    | Units    | Description   |
 |----------- |--------  |-------------  |
-| MFLIPS     | Mflip/s  | mega floating-point instructions per second |
-| MFLOPS     | Mflop/s  | mega floating-point operations per second |
-| MIPS       | Mip/s    | million instructions per second |
+| MFLIPS     | Mflip/s  | Mega floating-point instructions per second |
+| MFLOPS     | Mflop/s  | Mega floating-point operations per second |
+| MIPS       | Mip/s    | Million instructions per second |
 
 
 ## CPU_temperature Plugin
@@ -162,18 +162,18 @@ Unit and description for each metric is showed in the following table:
 
 | Metrics         | Units    | Description                                                   |
 |---------------- |--------- |-------------------------------------------------------------  |
-| CPU_usage_rate  | %        | percentage of CPU usage time                                  |
-| RAM_usage_rate  | %        | percentage of used RAM size                                   |
-| swap_usage_rate | %        | percentage of used swap size                                  |
-| net_throughput  | bytes/s  | total send and receive bytes via wlan and ethernet per second |
-| io_throughput   | bytes/s  | total disk read and write bytes per second                    |
+| CPU_usage_rate  | %        | Percentage of CPU usage time                                  |
+| RAM_usage_rate  | %        | Percentage of used RAM size                                   |
+| swap_usage_rate | %        | Percentage of used swap size                                  |
+| net_throughput  | bytes/s  | Total send and receive bytes via wlan and ethernet per second |
+| io_throughput   | bytes/s  | Total disk read and write bytes per second                    |
 
 
 ## Linux_sys_power Plugin
 
-This plugin is based on the Linux proc filesystem and some system drivers and libraries. The CPU power consumption is estimated by using a Linux module named as cpufreq-stats [cpufreq-stats][cpufreq-stats-module]. It is a driver that provides CPU frequency statistics for each CPU through its interface, which appears normally in the directory /sysfs/devices/system/cpu/cpuX/cpufreq/stats. For memory power estimation, we uses the system call “__NR_perf_event_open” to stat the hardware cache misses [perf-event][perf-event-open]. Together with reading the disk I/O read/write statistics, we calculate the memory power consumption with the following formula. The L2 cache miss latency and L2 cache line size can be obtained via some known calibrator [l2-calibrator][caliborator]. Disk and wireless network power consumptions are calculated based on their activities, like read/write and receive/send bytes during the sampling interval. As long as the energy specifications of the disk and wireless network card are given, we could compute the constants, like energy cost per disk read/write and energy cost per wireless network receive/send (E_DISK_R_PER_KB, E_DISK_W_PER_KB, E_NET_SND_PER_KB, E_NET_RCV_PER_KB), and get finally the energy consumed during a specific period.
+This plugin is based on the Linux proc filesystem and some system drivers and libraries. The CPU power consumption is estimated by using a Linux module named as [cpufreq-stats][cpufreq-stats-module]. It is a driver that provides CPU frequency statistics for each CPU through its interface, which appears normally in the directory `/sysfs/devices/system/cpu/cpuX/cpufreq/stats`. For memory power estimation, we uses the system call [“__NR_perf_event_open”][perf-event-open] to stat the hardware cache misses . Together with reading the disk I/O read/write statistics, we calculate the memory power consumption with the following formula. The L2 cache miss latency and L2 cache line size can be obtained via some known [calibrator][caliborator]. Disk and wireless network power consumptions are calculated based on their activities, like read/write and receive/send bytes during the sampling interval. As long as the energy specifications of the disk and wireless network card are given, we could compute the constants, like energy cost per disk read/write and energy cost per wireless network receive/send (`E_DISK_R_PER_KB`, `E_DISK_W_PER_KB`, `E_NET_SND_PER_KB`, `E_NET_RCV_PER_KB`), and get finally the energy consumed during a specific period.
 
-Please refer to the pTop project for more design and methodology details [PTOP][ptop].
+Please refer to the [pTop][ptop] project for more design and methodology details.
 
 
 ### Usage and metrics
@@ -211,7 +211,7 @@ Unit and description for each metric is showed in the following table:
 
 ## NVML Plugin
 
-This plugin is based on the nvml (NVIDIA management library)[NVML][nvml], which is a C-based API for monitoring various states of the NVIDIA GPU devices. It is required to use the library **libnvidia-ml.so**, which is installed with the NVIDIA Display Driver, therefore the default library path (/usr/lib64 or /usr/lib) is used to link and build the plugin. During the monitoring setup process, done the setup.sh shell script, the NVIDIA SDK with appropriate header file is installed.
+This plugin is based on the nvml ([NVIDIA management library][nvml]), which is a C-based API for monitoring various states of the NVIDIA GPU devices. It is required to use the library **libnvidia-ml.so**, which is installed with the NVIDIA Display Driver, therefore the default library path (`/usr/lib64` or `/usr/lib`) is used to link and build the plugin. During the monitoring setup process, done the setup.sh shell script, the NVIDIA SDK with appropriate header file is installed.
 
 ### Usage and metrics
 
@@ -245,9 +245,9 @@ All the metrics above is reported per GPU device. Unit and description for each 
 
 | Metrics             | Units      | Description   |
 |-------------------- |----------- |-------------  |
-| gpu_usage_rate      | %          | percentage of time for GPU execution |
+| gpu_usage_rate      | %          | Percentage of time for GPU execution |
 | mem_usage_rate      | %          | Percent of time for device memory access |
-| mem_allocated       | %          | percentage of used device memory |
+| mem_allocated       | %          | Percentage of used device memory |
 | PCIe_snd_throughput | bytes/s    | PCIe send bytes per second (for Maxwell or newer architecture) |
 | PCIe_rcv_throughput | bytes/s    | PCIe write bytes per second (for Maxwell or newer architecture) |
 | temperature         | °c         | GPU device temperature |
@@ -256,7 +256,7 @@ All the metrics above is reported per GPU device. Unit and description for each 
 
 ## RAPL_power Plugin
 
-This plugin is implemented for Intel CPU power measurements, as using RAPL provided energy and power information [RAPL][rapl]. In general cases, RAPL reports energy measurements per CPU socket covering basically two domains: the CPU package (including core and uncore devices) and the DRAM. 
+This plugin is implemented for Intel CPU power measurements, as using [RAPL][rapl] provided energy and power information. In general cases, RAPL reports energy measurements per CPU socket covering basically two domains: the CPU package (including core and uncore devices) and the DRAM. 
 
 ### Usage and metrics
 

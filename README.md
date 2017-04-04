@@ -6,14 +6,14 @@
 ## Introduction
 The essential functionality of PHANTOM monitoring client is metrics collection, which is implemented by various plug-ins according to the hardware accessibility.
 
-Currently 7 plug-ins are supported, whose implementation and design details are collected in the directory src/plugins. The monitoring client is designed to be pluggable. Loading a plug-in means starting a thread for the specific plug-in based on the users’ configuration at run-time. The folder src/agent plays a role as the main control unit, as managing various plug-ins with the help of pthreads. Folders like src/core, src/parser, and src/publisher are used by the main controller for accessorial support, including parsing input configuration file (src/mf_config.ini), publishing metrics via HTTP, and so on. 
+Currently 7 plug-ins are supported, whose implementation and design details are collected in the directory `src/plugins`. The monitoring client is designed to be pluggable. Loading a plug-in means starting a thread for the specific plug-in based on the users’ configuration at run-time. The folder `src/agent` plays a role as the main control unit, as managing various plug-ins with the help of pthreads. Folders like `src/core`, `src/parser`, and `src/publisher` are used by the main controller for accessorial support, including parsing input configuration file (`src/mf_config.ini`), publishing metrics via HTTP, and so on. 
 
-For code instrumentation and user-defined metrics collection, we provide a monitoring library and several APIs, which are kept in the directory src/api. Descriptions in detail about how to use the monitoring APIs are given also in this directory.
+For code instrumentation and user-defined metrics collection, we provide a monitoring library and several APIs, which are kept in the directory `src/api`. Descriptions in detail about how to use the monitoring APIs are given also in this directory.
 
 
 ## Prerequisites
 The monitoring client requires at first a running server and database. In order to install these requirements, please
-checkout the associated [PHANTOM monitoring server][server] and follow the setup instructions given in the repository README file. A successful setup process can be checked by the following command as testing whether the server is running in the specific url:
+checkout the associated [PHANTOM monitoring server][server] and follow the setup instructions given in the repository `README.md` file. A successful setup process can be checked by the following command as testing whether the server is running in the specific url:
 ```bash
 curl localhost:3033
 ```
@@ -110,7 +110,7 @@ device0:power = on
 
 ```
 
-Several parameters such as the `timing` of the plug-ins or the `server` where the server is running can be configured through this configuration file. The file is called `mf\_config.ini` and is located at `dist/mf\_config.ini`.
+Several parameters such as the `timing` of the plug-ins or the `server` where the server is running can be configured through this configuration file. The file is called `mf_config.ini` and is located at `dist/mf_config.ini`.
 
 
 ## Acknowledgment
