@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <curl/curl.h>
-
 #include "mf_debug.h"
 #include "publisher.h"
 

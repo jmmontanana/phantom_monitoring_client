@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <ctype.h>
-
 #include "mf_Linux_resources_connector.h"
 
 #define SUCCESS 1
@@ -41,7 +40,6 @@
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
-
 /* flag indicates which events are given as input */
 unsigned int flag = 0;
 /* time in seconds */
@@ -83,6 +81,9 @@ int NET_stat_read(struct net_stats *nets_info);
 int sys_IO_stat_read(struct io_stats *total_io_stat);
 int process_IO_stat_read(int pid, struct io_stats *io_info);
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /** @brief Initializes the Linux_resources plugin
  *
  *  Check if input events are valid; add valid events to the data->events
@@ -233,11 +234,7 @@ void mf_Linux_resources_to_json(Plugin_metrics *data, char *json)
 	}
 }
 
-
-/** @brief Adds events to the data->events, if the events are valid
- *
- *  @return 1 on success; 0 if no events are valid.
- */
+/* Adds events to the data->events, if the events are valid */
 int flag_init(char **events, size_t num_events) 
 {
 	int i, ii;
@@ -264,9 +261,7 @@ int flag_init(char **events, size_t num_events)
 	}
 }
 
-/* Gets cpu usage rate (unit is %). 
- * return the cpu usgae rate on success; 0.0 otherwise
- */
+/* Gets the current system clocks (cpu runtime, idle time, and so on) */
 int CPU_stat_read(struct cpu_stats *cpu_info) {
 	FILE *fp;
 	char line[1024];
@@ -275,7 +270,7 @@ int CPU_stat_read(struct cpu_stats *cpu_info) {
 	fp = fopen(CPU_STAT_FILE, "r");
 	if(fp == NULL) {
 		fprintf(stderr, "Error: Cannot open %s.\n", CPU_STAT_FILE);
-		return 0;
+		return FAILURE;
 	}
 	cpu_info->total_cpu_time = 0;
 	cpu_info->total_idle_time = 0;
@@ -296,12 +291,10 @@ int CPU_stat_read(struct cpu_stats *cpu_info) {
 			cpu_idle + cpu_iowait;
 	}
 	fclose(fp);
-	return 1;
+	return SUCCESS;
 }
 
-/* Gets ram usage rate (unit is %). 
- * return the ram usgae rate on success; 0.0 otherwise
- */
+/* Gets ram usage rate (unit is %); return the ram usgae rate on success; 0.0 otherwise */
 float RAM_usage_rate_read() {
 	FILE *fp;
 	char line[1024];
@@ -331,9 +324,7 @@ float RAM_usage_rate_read() {
 	return RAM_usage_rate;
 }
 
-/* Gets swap usage rate (unit is %). 
- * return the ram usgae rate on success; 0.0 otherwise
- */
+/* Gets swap usage rate (unit is %); return the ram usgae rate on success; 0.0 otherwise */
 float swap_usage_rate_read() {
 	FILE *fp;
 	char line[1024];
@@ -363,9 +354,7 @@ float swap_usage_rate_read() {
 	return swap_usage_rate;
 }
 
-/* Gets current network stats (send and receive bytes). 
- * return 1 on success; 0 otherwise
- */
+/* Gets current network stats (send and receive bytes) */
 int NET_stat_read(struct net_stats *nets_info) {
 	FILE *fp;
 	char line[1024];
@@ -375,7 +364,7 @@ int NET_stat_read(struct net_stats *nets_info) {
 	fp = fopen(NET_STAT_FILE, "r");
 	if(fp == NULL) {
 		fprintf(stderr, "Error: Cannot open %s.\n", NET_STAT_FILE);
-		return 0;
+		return FAILURE;
 	}
 	/* values reset to zeros */
 	nets_info->rcv_bytes = 0;
@@ -402,13 +391,10 @@ int NET_stat_read(struct net_stats *nets_info) {
 		}
 	}
 	fclose(fp);
-	return 1;
+	return SUCCESS;
 }
 
-/* Gets the IO stats of the whole system.
- * read IO stats for all processes and make an addition  
- * return 1 on success; 0 otherwise
- */
+/* Gets the IO stats of the whole system (read IO stats for all processes and make an addition) */
 int sys_IO_stat_read(struct io_stats *total_io_stat) {
 	DIR *dir;
 	struct dirent *drp;
@@ -418,7 +404,7 @@ int sys_IO_stat_read(struct io_stats *total_io_stat) {
 	dir = opendir("/proc");
 	if (dir == NULL) {
 		fprintf(stderr, "Error: Cannot open /proc.\n");
-		return 0;
+		return FAILURE;
 	}
 
 	/* declare data structure which stores the io stattistics of each process */
@@ -446,25 +432,24 @@ int sys_IO_stat_read(struct io_stats *total_io_stat) {
 
 	/* close /proc directory */
 	closedir(dir);
-	return 1; 
+	return SUCCESS; 
 }
 
-/* Gets the IO stats of a specified process. 
- * parameters are pid and io_info
- * return 1 on success; 0 otherwise
- */
+/* Gets the IO stats of a specified process (parameters are pid and io_info) */
 int process_IO_stat_read(int pid, struct io_stats *io_info) {
 	FILE *fp;
 	char filename[128], line[256];
 
+	/* Gets the filename /proc/[pid]/io and open the file for reading */
 	sprintf(filename, IO_STAT_FILE, pid);
 	if ((fp = fopen(filename, "r")) == NULL) {
 		fprintf(stderr, "Error: Cannot open %s.\n", filename);
-		return 0;
+		return FAILURE;
 	}
 	io_info->read_bytes = 0;
 	io_info->write_bytes = 0;
 
+	/* Gets the read and write bytes for the process */
 	while (fgets(line, 256, fp) != NULL) {
 		if (!strncmp(line, "read_bytes:", 11)) {
 			sscanf(line + 12, "%llu", &io_info->read_bytes);
@@ -477,5 +462,5 @@ int process_IO_stat_read(int pid, struct io_stats *io_info) {
 		}
 	}
 	fclose(fp);
-	return 1;
+	return SUCCESS;
 }

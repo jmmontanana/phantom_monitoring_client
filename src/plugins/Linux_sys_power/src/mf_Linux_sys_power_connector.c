@@ -23,48 +23,39 @@
 #include <unistd.h>
 #include <asm/unistd.h>
 #include <linux/perf_event.h>
-
 #include "mf_Linux_sys_power_connector.h"
-/*
- **********************************************************************
+
+/***********************************************************************
  CPU Specification
   - power per core
- **********************************************************************
- */
+ ***********************************************************************/
 #define MAX_CPU_POWER 8.23
 #define MIN_CPU_POWER 0.75
 
-/*
- **********************************************************************
+/***********************************************************************
  Memory Specification
- **********************************************************************
- */
+ ***********************************************************************/
 #define MEMORY_POWER 3.2 //in Watts, from my memory module specification
 #define L2CACHE_MISS_LATENCY 2.09 //ns, get use calibrator
 #define L2CACHE_LINE_SIZE 256 //byte get use calibrator
 
-/*
- **********************************************************************
+/***********************************************************************
  Energy of the disk specs
    - Read: 0.02 * 2.78
    - Write: 0.02 * 2.19
- **********************************************************************
- */
+ ***********************************************************************/
 #define E_DISK_R_PER_KB (0.02 * 2.78)	// milliJoule/KB
 #define E_DISK_W_PER_KB  (0.02 * 2.19)	// milliJoule/KB
 
-/*
- **********************************************************************
+/***********************************************************************
  My Laptop Intel 2200 BG wireless network card:
    - Transmit: 1800 mW
    - Receive: 1400 mW
    - Real upload bandwidth: 12.330M/s
    - Real download bandwidth 5.665M/s
- **********************************************************************
- */
+ ***********************************************************************/
 #define E_NET_SND_PER_KB (1800 / (1024 * 12.330))	// milliJoule/KB
 #define E_NET_RCV_PER_KB (1400 / (1024 * 5.665))	// milliJoule/KB
-
 
 #define SUCCESS 1
 #define FAILURE 0
@@ -82,7 +73,6 @@
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
-
 /* flag indicates which events are given as input */
 unsigned int flag = 0;
 /* time in seconds */
@@ -120,12 +110,14 @@ int sys_IO_stat_read(struct io_stats *total_io_stat);
 int process_IO_stat_read(int pid, struct io_stats *io_info);
 float sys_net_energy(struct net_stats *stats_before, struct net_stats *stats_after);
 float sys_disk_energy(struct io_stats *stats_before, struct io_stats *stats_after);
-
 float CPU_energy_read(void);
 void create_perf_stat_counter(void);
 unsigned long long read_counter(int fd);
 unsigned long long memory_counter_read(void);
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /** @brief Initializes the Linux_sys_power plugin
  *
  *  Check if input events are valid; add valid events to the data->events
@@ -356,10 +348,7 @@ void mf_Linux_sys_power_to_json(Plugin_metrics *data, char *json)
 }
 
 
-/** @brief Adds events to the data->events, if the events are valid
- *
- *  @return 1 on success; 0 if no events are valid.
- */
+/* Adds events to the data->events, if the events are valid */
 int flag_init(char **events, size_t num_events) 
 {
 	int i, ii;
@@ -386,9 +375,7 @@ int flag_init(char **events, size_t num_events)
 	}
 }
 
-/* Gets current network stats (send and receive bytes via wireless card). 
- * return 1 on success; 0 otherwise
- */
+/* Gets current network stats (send and receive bytes via wireless card). */
 int NET_stat_read(struct net_stats *nets_info) {
 	FILE *fp;
 	char line[1024];
@@ -398,7 +385,7 @@ int NET_stat_read(struct net_stats *nets_info) {
 	fp = fopen(NET_STAT_FILE, "r");
 	if(fp == NULL) {
 		fprintf(stderr, "Error: Cannot open %s.\n", NET_STAT_FILE);
-		return 0;
+		return FAILURE;
 	}
 	/* values reset to zeros */
 	nets_info->rcv_bytes = 0;
@@ -416,13 +403,10 @@ int NET_stat_read(struct net_stats *nets_info) {
 		}
 	}
 	fclose(fp);
-	return 1;
+	return SUCCESS;
 }
 
-/* Gets the IO stats of the whole system.
- * read IO stats for all processes and make an addition  
- * return 1 on success; 0 otherwise
- */
+/* Gets the IO stats of the whole system (read IO stats for all processes and make an addition) */
 int sys_IO_stat_read(struct io_stats *total_io_stat) {
 	DIR *dir;
 	struct dirent *drp;
@@ -432,7 +416,7 @@ int sys_IO_stat_read(struct io_stats *total_io_stat) {
 	dir = opendir("/proc");
 	if (dir == NULL) {
 		fprintf(stderr, "Error: Cannot open /proc.\n");
-		return 0;
+		return FAILURE;
 	}
 
 	/* declare data structure which stores the io stattistics of each process */
@@ -460,13 +444,10 @@ int sys_IO_stat_read(struct io_stats *total_io_stat) {
 
 	/* close /proc directory */
 	closedir(dir);
-	return 1; 
+	return SUCCESS; 
 }
 
-/* Gets the IO stats of a specified process. 
- * parameters are pid and io_info
- * return 1 on success; 0 otherwise
- */
+/* Gets the IO stats of a specified process (parameters are pid and io_info) */
 int process_IO_stat_read(int pid, struct io_stats *io_info) {
 	FILE *fp;
 	char filename[128], line[256];
@@ -474,7 +455,7 @@ int process_IO_stat_read(int pid, struct io_stats *io_info) {
 	sprintf(filename, IO_STAT_FILE, pid);
 	if ((fp = fopen(filename, "r")) == NULL) {
 		fprintf(stderr, "Error: Cannot open %s.\n", filename);
-		return 0;
+		return FAILURE;
 	}
 	io_info->read_bytes = 0;
 	io_info->write_bytes = 0;
@@ -491,13 +472,10 @@ int process_IO_stat_read(int pid, struct io_stats *io_info) {
 		}
 	}
 	fclose(fp);
-	return 1;
+	return SUCCESS;
 }
 
-/* Calculates the system network energy consumption;
- * updates net statistics values   
- * return the network energy consumption (in milliJoule)
- */
+/* Calculates the system network energy consumption; updates net statistics values; return the network energy consumption (in milliJoule) */
 float sys_net_energy(struct net_stats *stats_before, struct net_stats *stats_after) 
 {
 	unsigned long long rcv_bytes, send_bytes;
@@ -514,10 +492,7 @@ float sys_net_energy(struct net_stats *stats_before, struct net_stats *stats_aft
 	return enet;
 }
 
-/* Calculates the system disk energy consumption;
- * updates io statistics values   
- * return the disk energy consumption (in milliJoule)
- */
+/* Calculates the system disk energy consumption; updates io statistics values; return the disk energy consumption (in milliJoule) */
 float sys_disk_energy(struct io_stats *stats_before, struct io_stats *stats_after) 
 {
 	unsigned long long read_bytes, write_bytes;
@@ -534,12 +509,10 @@ float sys_disk_energy(struct io_stats *stats_before, struct io_stats *stats_afte
 	return edisk;
 }
 
-/* get the cpu freq counting and return the cpu energy since the last call of the function */
+/* get the cpu freq counting; return the cpu energy since the system's last booting */
 float CPU_energy_read(void) 
 {
-	/* 
-	  read the system cpu energy based on given max- and min- cpu energy, and frequencies statistics 
-	 */
+	/* read the system cpu energy based on given max- and min- cpu energy, and frequencies statistics */
 	FILE *fp;
 	char line[32] = {'\0'};
 	DIR *dir;
@@ -551,9 +524,7 @@ float CPU_energy_read(void)
 	unsigned long long tmp;
 	unsigned long long freqs[16];
 
-	/* 
-	  check if system support cpu freq counting 
-	 */
+	/* check if system support cpu freq statistics */
 	fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state", "r");
 	if(fp == NULL) {
 		printf("ERROR: CPU frequency statistics are not supported.\n");
@@ -601,14 +572,13 @@ float CPU_energy_read(void)
 	return energy_total;
 }
 
-/* init perf counter for hardware cache misses 
-   return the file descriptor for further read operations */
+/* init perf counter for hardware cache misses; get the file descriptors for all CPUs */
 void create_perf_stat_counter(void)
 {
 	/* get the nubmer of CPUs */
 	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 
-	struct perf_event_attr attr; //cache miss
+	struct perf_event_attr attr; //hardware L2 cache miss
 	memset(&attr, 0, sizeof(struct perf_event_attr));
 	attr.type =	PERF_TYPE_HARDWARE; 
   	attr.config = PERF_COUNT_HW_CACHE_MISSES;
@@ -618,15 +588,14 @@ void create_perf_stat_counter(void)
 	attr.enable_on_exec = 1;
 	attr.size = sizeof(attr);
 	
-	/* This measures the specified process/thread on any CPU;
-	   return the file descriptor for the counter */
+	/* The counter measures the CPU L2 cache misses; return the file descriptor for the counter */
 	int i;
 	for (i = 0; i < nr_cpus; i++) {
 		fd[i] = syscall(__NR_perf_event_open, &attr, -1, i, -1, 0);
 	}
 }
 
-/* read the perf counter from the file descriptor */
+/* read the perf counter with given file descriptor */
 unsigned long long read_counter(int fd)
 {
 	unsigned long long single_count[3];
@@ -645,6 +614,7 @@ unsigned long long read_counter(int fd)
 	}
 }
 
+/* read and add all memory counters for each CPU */
 unsigned long long memory_counter_read(void) 
 {
 	int i;

@@ -41,6 +41,9 @@ const char NVML_metrics[NVML_EVENTS_NUM][32] = {
 int events_are_all_not_valid(char **events, size_t num_events);
 static int load_nvml_library();
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /** @brief Initializes the NVML plugin
  *
  *  Load NVML library; 
@@ -207,7 +210,6 @@ void mf_NVML_to_json(Plugin_metrics *data, char **events, size_t num_events, cha
 /** @brief Stops the plugin
  *
  *  This methods stops papi counters gracefully;
- *
  */
 void mf_NVML_shutdown()
 {
@@ -219,10 +221,7 @@ void mf_NVML_shutdown()
     nvmlShutdown();
 }
 
-/** @brief Checks if all events are not valid
- *
- *  @return 1 when all events are not valid; 0 otherwise.
- */
+/* Checks if all events are not valid; return 1 when all events are not valid; 0 otherwise. */
 int events_are_all_not_valid(char **events, size_t num_events) 
 {
 	int i, ii, counter;
@@ -248,10 +247,7 @@ int events_are_all_not_valid(char **events, size_t num_events)
 	}
 }
 
-/** @brief initialized the nvml library
- *
- *  @return 1 on success; 0 otherwise.
- */
+/* initialize the nvml library */
 static int load_nvml_library()
 {
 	nvmlReturn_t ret = nvmlInit();

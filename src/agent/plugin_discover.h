@@ -30,7 +30,7 @@ extern int pluginCount;
 extern char* plugins_name[256];
 
 /**
- * @brief Discovers available plug-ins, and registers them to the MFAgent
+ * @brief Discovers available plug-ins, and registers them to the plugin manager
  */
 void* discover_plugins(const char *dirname, PluginManager *pm);
 

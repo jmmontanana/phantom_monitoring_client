@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <hwloc.h>
 #include <papi.h>
-
 #include "mf_RAPL_power_connector.h"
 
 #define SUCCESS 1
@@ -29,9 +28,7 @@
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
-/* time in seconds */
-double before_time, after_time; 
-
+double before_time, after_time;  /* time in seconds */
 int EventSet = PAPI_NULL;
 int num_sockets = 0;
 double denominator = 1.0 ; /*according to different CPU models, DRAM energy scalings are different */
@@ -49,7 +46,13 @@ double rapl_get_denominator(void);
 void native_cpuid(unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx);
 int rapl_stat_read(float *epackage, float *edram);
 
-
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
+/** @brief Initializes the papi library; check if rapl component is enabled; read the initial power measurements and timestamp
+ *
+ *  @return 1 on success; 0 otherwise.
+ */
 int mf_RAPL_power_init(Plugin_metrics *data, char **events, size_t num_events)
 {
 	rapl_is_available = rapl_init(data, events, num_events);
@@ -66,6 +69,10 @@ int mf_RAPL_power_init(Plugin_metrics *data, char **events, size_t num_events)
     return SUCCESS;
 }
 
+/** @brief Samples and calculates the average power during the sampling interval
+ *
+ *  @return 1 on success; 0 otherwise.
+ */
 int mf_RAPL_power_sample(Plugin_metrics *data)
 {
 	/* get current timestamp in second */
@@ -102,6 +109,11 @@ int mf_RAPL_power_sample(Plugin_metrics *data)
 	return SUCCESS;
 }
 
+/** @brief Formats the sampling data into a json string
+ *
+ *  json string contains: plugin name, timestamps, metrics_name and metrics_value
+ *
+ */
 void mf_RAPL_power_to_json(Plugin_metrics *data, char *json)
 {
     char tmp[128] = {'\0'};
@@ -232,9 +244,7 @@ int check_rapl_component(void)
     return FAILURE;
 }
 
-/* Count the number of available sockets by hwloc library. 
- * return the number of sockets on success; 0 otherwise
- */
+/* Count the number of available sockets by hwloc library; return the number of sockets on success; 0 otherwise*/
 int hardware_sockets_count(void)
 {
 	int depth;
@@ -280,8 +290,7 @@ void native_cpuid(unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsig
     );
 }
 
-/* Read rapl counters values, computer the energy values for CPU and DRAM; (in milliJoule)
-   counters are reset after read */
+/* Read rapl counters values, computer the energy values for CPU and DRAM (in milliJoule); counters are reset after read */
 int rapl_stat_read(float *epackage, float *edram) 
 {
 	int i, ii, ret;

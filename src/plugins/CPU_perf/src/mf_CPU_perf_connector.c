@@ -39,6 +39,9 @@ long long before_time, after_time;
 int events_are_all_not_valid(char **events, size_t num_events);
 static int load_papi_library(int *num_cores);
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /** @brief Initializes the CPU_perf plugin
  *
  *  Load papi library; create a EventSet; add available events to the EventSet;
@@ -245,10 +248,8 @@ static int load_papi_library(int *num_cores)
 
     return SUCCESS;
 }
-/** @brief Checks if all events are not valid
- *
- *  @return 1 when all events are not valid; 0 otherwise.
- */
+
+/* Checks if all events are not valid; return 1 when all events are not valid; 0 otherwise. */
 int events_are_all_not_valid(char **events, size_t num_events) 
 {
 	int i, ii, counter;

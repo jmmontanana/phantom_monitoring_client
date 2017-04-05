@@ -17,19 +17,15 @@
 #include <stdlib.h> /* malloc etc */
 #include <string.h>
 #include <time.h>
-
+#include <mf_debug.h>
 #include <plugin_manager.h> /* mf_plugin_xxx_hook */
 #include <mf_parser.h> /* mfp_data */
 #include <plugin_utils.h> /* Plugin_metrics */
-#include <mf_debug.h>
-
 #include "mf_RAPL_power_connector.h"
-
 
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
-
 mfp_data *conf_data = NULL;
 Plugin_metrics *monitoring_data = NULL;
 int is_initialized = 0;
@@ -39,6 +35,9 @@ int is_initialized = 0;
  ******************************************************************************/
 char* mf_plugin_RAPL_power_hook();
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /* Initialize the plugin; 
    register the plugin hook to the plugin manager 
    @return 1 on success; 0 otherwise */

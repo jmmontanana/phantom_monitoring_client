@@ -42,6 +42,9 @@ int prefix(const char *pre, const char *str)
     return strncmp(pre, str, strlen(pre));
 }
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /** @brief Initializes the CPU_temperature plugin
  *
  *  Load libsensors library; prepare features_list for sampling

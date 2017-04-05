@@ -39,6 +39,9 @@ int is_initialized = 0;
  ******************************************************************************/
 char* mf_plugin_CPU_temperature_hook();
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /* Initialize the plugin; 
    register the plugin hook to the plugin manager 
    @return 1 on success; 0 otherwise */

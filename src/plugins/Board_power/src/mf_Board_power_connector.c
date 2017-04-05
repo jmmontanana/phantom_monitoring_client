@@ -20,12 +20,12 @@
 #include <iio.h>
 #include "mf_Board_power_connector.h"
 
-//#define ACME_DEVICE_NAME "baylibre-acme.local"
 #define SUCCESS 1
 #define FAILURE 0
 #define MAX_DEVICES 8
 #define MAX_CHANNELS 5
 #define SAMPLES_PER_READ 16
+
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
@@ -52,13 +52,15 @@ static struct my_channel my_chn[MAX_DEVICES][MAX_CHANNELS];
 int mf_acme_is_enabled(char *acme_name);
 static void init_ina2xx_channels(struct iio_device *dev, int device_idx);
 int create_EventSets(Plugin_metrics *data, char **events, size_t num_events);
-
 static ssize_t print_sample(const struct iio_channel *chn, void *buf, size_t len, void *d);
 static inline int chan_device(const struct iio_channel *chn);
 static inline int chan_index(const struct iio_channel *chn, int device_idx);
 void filter(Plugin_metrics *data);
 void reset_my_channels_value();
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /** Initializes the Board_power plugin
  *  
  *  Checks if the ACME component is available through hostname "baylibre-acme.local",
@@ -77,7 +79,6 @@ int mf_Board_power_init(Plugin_metrics *data, char **events, size_t num_events, 
 	}
 	return SUCCESS;
 }
-
 
 /** @brief Samples all possible events and stores data into the Plugin_metrics
  *
@@ -138,7 +139,6 @@ void mf_Board_power_to_json(Plugin_metrics *data, char **events, size_t num_even
 	}
 }
 
-
 /** @brief Stops the plugin
  *
  *  This methods shuts down gracefully for sampling.
@@ -158,7 +158,6 @@ void mf_Board_power_shutdown()
 	}
 }
 
-
 /* Checks if the ACME component is available through hostname "baylibre-acme.local";
 initializes variable "my_chn" for all possible devices and channels */
 int mf_acme_is_enabled(char *acme_name)
@@ -167,24 +166,27 @@ int mf_acme_is_enabled(char *acme_name)
 	char temp[1024];
 	unsigned int buffer_size = SAMPLES_PER_READ;
 
+	/* create network link with the acme board with given acme board hostname */
 	ctx = iio_create_network_context(acme_name);
 	if (!ctx) {
 		fprintf(stderr, "Unable to create IIO context\n");
 		return FAILURE;
 	}
 
-	/* count the number of devices */
+	/* count the number of devices <= 8 */
 	nb_devices = iio_context_get_devices_count(ctx);
 	if(nb_devices > MAX_DEVICES) {
 		fprintf(stderr, "Too many devices than maximum setting\n");
 		return FAILURE;	
 	}
+
 	/* allocate devices */
 	devices = (struct iio_device **)malloc(nb_devices * sizeof(struct iio_device *));
 
 	/* allocate different buffers for different devices */
 	buffer = (struct iio_buffer **)malloc(nb_devices * sizeof(struct iio_buffer *));
 
+	/* for each device, prepare sampling of all channels */
 	for(device_idx = 0; device_idx < nb_devices; device_idx++) {
 
 		devices[device_idx] = iio_context_get_device(ctx, device_idx);
@@ -232,8 +234,7 @@ static void init_ina2xx_channels(struct iio_device *dev, int device_idx)
 	struct iio_channel *ch;
 
 	if (strcmp(iio_device_get_name(dev), "ina226")) {
-		fprintf(stderr, "Unknown device %s\n",
-			iio_device_get_name(dev));
+		fprintf(stderr, "Unknown device %s\n", iio_device_get_name(dev));
 		exit(-1);
 	}
 	nb_samples[device_idx] = 0;

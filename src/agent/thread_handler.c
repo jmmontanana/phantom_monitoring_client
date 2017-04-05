@@ -21,20 +21,19 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
-
 #include "main.h" 			// variables like confFile
-#include "thread_handler.h"
+#include "mf_parser.h" 		// functions like mfp_parse(), ...
+#include "publisher.h" 		// function like publish_json()
+#include "mf_debug.h"  		// functions like log_error(), log_info()...
 #include "plugin_manager.h"	// functions like PluginManager_new(), PluginManager_free(), PluginManager_get_hook()
 #include "plugin_discover.h" // variables like pluginCount, plugins_name; 
                              // functions like discover_plugins(), cleanup_plugins()
-#include "mf_parser.h" // functions like mfp_parse(), ...
-#include "publisher.h" // function like publish_json()
-#include "mf_debug.h"  // functions like log_error(), log_info()...
+#include "thread_handler.h"
 
 #define JSON_LEN 1024
-
 #define SUCCESS 1
 #define FAILURE 0
+
 /*******************************************************************************
  * Variable Declarations
  ******************************************************************************/
@@ -49,33 +48,37 @@ PluginHook *hooks;
 /*******************************************************************************
  * Forward Declarations
  ******************************************************************************/
-void catcher(int signo);
+static void catcher(int signo);
 static void init_timings(void);
-void *entryThreads(void *arg);  //threads entry for all threads
-int checkConf(void);
-int gatherMetric(int num);
+static void *entryThreads(void *arg);  //threads entry for all threads
+static int checkConf(void);
+static int gatherMetric(int num);
 
+/*******************************************************************************
+ * Functions implementation
+ ******************************************************************************/
 /* All threads starts here */
 int startThreads(void) {
 	int t;
 	running = 1;
 
+	/* initialize plugin manager, which is a queue of plugin hooks */
 	pm = PluginManager_new();
 	const char *dirname = { "/plugins" };
 	char *pluginLocation = malloc(256 * sizeof(char));
 	strcpy(pluginLocation, pwd);
 	strcat(pluginLocation, dirname);
 
+	/* discover plugins and register them to the plugin manager */ 
 	void* pdstate = discover_plugins(pluginLocation, pm);
 
-	/* get sleep_tims for each plugin */
+	/* get sampling interval for each plugin */
 	init_timings();
 
 	/*get bulk_size from mf_config.ini */
 	char tmp_string[20] = {'\0'};
 	mfp_get_value("generic", "bulk_size", tmp_string);
 	bulk_size = atoi(tmp_string);
-
 
 	int num_threads = pluginCount + 1;
 	int iret[num_threads];
@@ -86,6 +89,7 @@ int startThreads(void) {
 		hooks[t] = PluginManager_get_hook(pm);
 	}
 
+	/* create threads for monitoring and updating configurations */
 	for (t = 0; t < num_threads; t++) {
 		nums[t] = t;
 		iret[t] = pthread_create(&threads[t], NULL, entryThreads, &nums[t]);
@@ -96,7 +100,7 @@ int startThreads(void) {
 	}
 
 	struct sigaction sig;
-	sig.sa_handler = catcher;
+	sig.sa_handler = catcher; /* signal handler is "catcher" */
 	sig.sa_flags = SA_RESTART;
 	sigemptyset(&sig.sa_mask);
 	sigaction(SIGTERM, &sig, NULL );
@@ -105,7 +109,7 @@ int startThreads(void) {
 	while (running)
 		sleep(1);
 	
-	//thread join from plugins threads till all the sending threads
+	/* thread join from plugins threads till all the sending threads */
 	for (t = 0; t < pluginCount; t++) {
 		pthread_join(threads[t], NULL);
 	}
@@ -113,11 +117,19 @@ int startThreads(void) {
 	cleanup_plugins(pdstate);
 	PluginManager_free(pm);
 	free(pluginLocation);
-	return 1;
+	return SUCCESS;
+}
+
+/* catch the stop signal */
+static void catcher(int signo) 
+{
+	running = 0;
+	log_info("Signal %d catched.\n", signo);
 }
 
 /* entry for all threads */
-void* entryThreads(void *arg) {
+static void* entryThreads(void *arg) 
+{
 	int *typeT = (int*) arg;
 	if(*typeT < pluginCount) {
 		gatherMetric(*typeT);
@@ -129,7 +141,7 @@ void* entryThreads(void *arg) {
 }
 
 /* timings update if mf_config.ini has been modified */
-int checkConf(void) 
+static int checkConf(void) 
 {
 	while (running) {
 		mfp_parse(confFile);
@@ -144,7 +156,7 @@ int checkConf(void)
 }
 
 /* each plugin gathers its metrics at a specific rate and send the json-formatted metrics to mf_server */
-int gatherMetric(int num) 
+static int gatherMetric(int num) 
 {
 	int i;
 	long timings = sleep_tims[num].tv_sec * 10e8 + sleep_tims[num].tv_nsec;
@@ -188,13 +200,6 @@ int gatherMetric(int num)
 		free(json_array);
 	}
 	return SUCCESS;
-}
-
-/* catch the stop signal */
-void catcher(int signo) 
-{
-	running = 0;
-	log_info("Signal %d catched.\n", signo);
 }
 
 /* parse mf_cconfig.ini to get all timing information */
