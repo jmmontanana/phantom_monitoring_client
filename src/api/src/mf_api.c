@@ -256,7 +256,7 @@ int get_config_parameters(char *server, char *platform_id)
 	char *URL = calloc(256, sizeof(char));
 	char *response_str = calloc(256, sizeof(char));
 
-	sprintf(URL, "%s/v1/phantom_mf/configs/%s", server, platform_id);
+	sprintf(URL, "%s/v1/phantom_rm/configs/%s", server, platform_id);
 	if(query_json(URL, response_str) <= 0) {
 		printf("ERROR: query with %s failed.\n", URL);
 		return 0;
