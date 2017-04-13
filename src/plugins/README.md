@@ -19,21 +19,21 @@ More details about each plugin, for example, the plugins' usage, prerequisites a
 
 This plugin is based on the external ACME power measurement kit and the libiio library, which is installed during the monitoring client setup process, done automatically by the setup.sh shell script. In case that the ACME power measurement board is not connected with the monitoring client hosted computer or the libiio library is not found, the plugin will fail and report associated error messages.
 
-Please find at first the IP address of the ACME board, when the ACME board is connected with your local machine:
-1. Start a terminal emulator like PuTTY with parameters /dev/tty?? 115200 BAUD, 8 bits, 1 stop bit, no parity, no flow control
-2. The default login is root, with an empty password.
-3. check ip address with **ifconfig**
-
-and then put it as a known host with hostname "baylibre-acme.local", for your local machine by editing the file: /etc/hosts. 
-```
-echo xxx.xxx.xxx.xxx baylibre-acme.local >> /etc/hosts
-```
+The default hostname of the ACME board is **"baylibre-acme.local"** or **"power-jetson.local"** depending on the images you use on the ACME board.
 
 It is recommended to try the following command to test the ACME power measurement board connection:
 
 ```
 $ ping baylibre-acme.local
 ```
+or 
+
+```
+$ ping power-jetson.local
+```
+
+Please configure the ACME board name in the **mf_config.ini** file.
+
 
 ### Usage and metrics
 
