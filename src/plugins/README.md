@@ -19,11 +19,21 @@ More details about each plugin, for example, the plugins' usage, prerequisites a
 
 This plugin is based on the external ACME power measurement kit and the libiio library, which is installed during the monitoring client setup process, done automatically by the setup.sh shell script. In case that the ACME power measurement board is not connected with the monitoring client hosted computer or the libiio library is not found, the plugin will fail and report associated error messages.
 
+The default hostname of the ACME board is **"baylibre-acme.local"** or **"power-jetson.local"** depending on the images you use on the ACME board.
+
 It is recommended to try the following command to test the ACME power measurement board connection:
 
 ```
 $ ping baylibre-acme.local
 ```
+or 
+
+```
+$ ping power-jetson.local
+```
+
+Please configure the ACME board name in the **mf_config.ini** file.
+
 
 ### Usage and metrics
 
@@ -171,7 +181,7 @@ Unit and description for each metric is showed in the following table:
 
 ## Linux_sys_power Plugin
 
-This plugin is based on the Linux proc filesystem and some system drivers and libraries. The CPU power consumption is estimated by using a Linux module named as [cpufreq-stats][cpufreq-stats-module]. It is a driver that provides CPU frequency statistics for each CPU through its interface, which appears normally in the directory `/sysfs/devices/system/cpu/cpuX/cpufreq/stats`. For memory power estimation, we uses the system call [“__NR_perf_event_open”][perf-event-open] to stat the hardware cache misses . Together with reading the disk I/O read/write statistics, we calculate the memory power consumption with the following formula. The L2 cache miss latency and L2 cache line size can be obtained via some known [calibrator][caliborator]. Disk and wireless network power consumptions are calculated based on their activities, like read/write and receive/send bytes during the sampling interval. As long as the energy specifications of the disk and wireless network card are given, we could compute the constants, like energy cost per disk read/write and energy cost per wireless network receive/send (`E_DISK_R_PER_KB`, `E_DISK_W_PER_KB`, `E_NET_SND_PER_KB`, `E_NET_RCV_PER_KB`), and get finally the energy consumed during a specific period.
+This plugin is based on the Linux proc filesystem and some system drivers and libraries. The CPU power consumption is estimated by using a Linux module named as [cpufreq-stats][cpufreq-stats-module]. It is a driver that provides CPU frequency statistics for each CPU through its interface, which appears normally in the directory `/sys/devices/system/cpu/...` (or alternatively `/sysfs/devices/system/cpu/cpuX/cpufreq/stats` for other linux kernels). For memory power estimation, we uses the system call [“__NR_perf_event_open”][perf-event-open] to stat the hardware cache misses . Together with reading the disk I/O read/write statistics, we calculate the memory power consumption with the following formula. The L2 cache miss latency and L2 cache line size can be obtained via some known [calibrator][caliborator]. Disk and wireless network power consumptions are calculated based on their activities, like read/write and receive/send bytes during the sampling interval. As long as the energy specifications of the disk and wireless network card are given, we could compute the constants, like energy cost per disk read/write and energy cost per wireless network receive/send (`E_DISK_R_PER_KB`, `E_DISK_W_PER_KB`, `E_NET_SND_PER_KB`, `E_NET_RCV_PER_KB`), and get finally the energy consumed during a specific period.
 
 Please refer to the [pTop][ptop] project for more design and methodology details.
 
