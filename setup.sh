@@ -53,7 +53,7 @@ EXCESS_QUEUE_VERSION=release/0.1.0
 # ============================================================================ #
 
 cd $ROOT
-wget https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.2.tar.gz
+wget -4 https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.2.tar.gz
 tar xf hwloc-1.11.2.tar.gz
 cd hwloc-1.11.2
 ./configure --prefix=${INSTALL_PATH_HWLOC}
@@ -65,7 +65,7 @@ make install
 # ============================================================================ #
 
 cd $ROOT
-wget http://icl.cs.utk.edu/projects/papi/downloads/${PAPI}-${PAPI_VERSION}.tar.gz
+wget -4 http://icl.cs.utk.edu/projects/papi/downloads/${PAPI}-${PAPI_VERSION}.tar.gz
 if [ ! -f ${PAPI}-${PAPI_VERSION}.tar.gz ]; then
     echo "[ERROR] File not found: " ${PAPI}-${PAPI_VERSION}.tar.gz
     exit 1;
@@ -81,7 +81,7 @@ make install all
 # ============================================================================ #
 
 cd $ROOT
-wget http://curl.haxx.se/download/${CURL}-${CURL_VERSION}.tar.gz
+wget -4 http://curl.haxx.se/download/${CURL}-${CURL_VERSION}.tar.gz
 if [ ! -f ${CURL}-${CURL_VERSION}.tar.gz ]; then
     echo "[ERROR] File not found: " ${CURL}-${CURL_VERSION}.tar.gz
     exit 1;
@@ -98,7 +98,7 @@ make install all
 # ============================================================================ #
 
 cd $ROOT
-wget http://www.eu.apache.org/dist/apr/${APR}-${APR_VERSION}.tar.gz
+wget -4 http://www.eu.apache.org/dist/apr/${APR}-${APR_VERSION}.tar.gz
 if [ ! -f ${APR}-${APR_VERSION}.tar.gz ]; then
     echo "[ERROR] File not found: " ${APR}-${APR_VERSION}.tar.gz
     exit 1;
@@ -115,7 +115,7 @@ make install all
 # ============================================================================ #
 
 cd $ROOT
-wget http://www.eu.apache.org/dist//apr/apr-util-1.5.4.tar.gz
+wget -4 http://www.eu.apache.org/dist//apr/apr-util-1.5.4.tar.gz
 if [ ! -f ${APR_UTIL}-${APR_UTIL_VERSION}.tar.gz ]; then
     echo "[ERROR] File not found: " ${APR_UTIL}-${APR_UTIL_VERSION}.tar.gz
     exit 1;
@@ -136,7 +136,7 @@ mkdir -f nvidia_gdk_download
 cd nvidia_gdk_download
 NVIDIA_BASE_URL="http://developer.download.nvidia.com"
 NVIDIA_GDK="gdk_linux_amd64_352_55_release.run"
-wget ${NVIDIA_BASE_URL}/compute/cuda/7.5/Prod/gdk/${NVIDIA_GDK}
+wget -4 ${NVIDIA_BASE_URL}/compute/cuda/7.5/Prod/gdk/${NVIDIA_GDK}
 if [ ! -f ${NVIDIA_GDK} ]; then
     echo "[ERROR] File not found: " ${NVIDIA_GDK}
     exit 1;
@@ -153,7 +153,7 @@ chmod +x ${NVIDIA_GDK}
 #
 
 cd $ROOT
-wget https://ftp.gnu.org/gnu/m4/m4-1.4.17.tar.gz
+wget -4 https://ftp.gnu.org/gnu/m4/m4-1.4.17.tar.gz
 tar zxvf m4-1.4.17.tar.gz
 cd m4-1.4.17
 ./configure --prefix=${INSTALL_PATH_M4}
@@ -163,7 +163,7 @@ export PATH=${PATH}:${INSTALL_PATH_M4}/bin
 
 
 cd $ROOT
-wget http://ftp.gnu.org/gnu/bison/bison-3.0.2.tar.gz
+wget -4 http://ftp.gnu.org/gnu/bison/bison-3.0.2.tar.gz
 tar zxvf bison-3.0.2.tar.gz
 cd bison-3.0.2
 ./configure --prefix=${INSTALL_PATH_BISON}
@@ -171,7 +171,7 @@ make
 make install
 
 cd $ROOT
-wget http://prdownloads.sourceforge.net/flex/flex-2.6.0.tar.gz
+wget -4 http://prdownloads.sourceforge.net/flex/flex-2.6.0.tar.gz
 tar zxvf flex-2.6.0.tar.gz
 cd flex-2.6.0
 ./configure --prefix=${INSTALL_PATH_FLEX}
@@ -182,7 +182,7 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALL_PATH_FLEX}/lib:${INSTALL_PAT
 export PATH=${PATH}:${INSTALL_PATH_BISON}/bin:${INSTALL_PATH_FLEX}/bin
 
 cd $ROOT
-wget https://fossies.org/linux/misc/lm_sensors-3.4.0.tar.gz
+wget -4 https://fossies.org/linux/misc/lm_sensors-3.4.0.tar.gz
 tar zxvf lm_sensors-3.4.0.tar.gz
 cd lm_sensors-3.4.0
 make PREFIX=${INSTALL_PATH_SENSORS} all
@@ -199,7 +199,7 @@ make PREFIX=${INSTALL_PATH_SENSORS} install
 cd $ROOT
 git clone https://github.com/analogdevicesinc/libiio.git
 cd libiio
-mkdir -f ${INSTALL_PATH_LIBIIO}
+mkdir -p ${INSTALL_PATH_LIBIIO}
 cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PATH_LIBIIO} ./
 make all
 make install
