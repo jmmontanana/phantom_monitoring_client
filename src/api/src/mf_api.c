@@ -43,6 +43,27 @@ static int api_prepare(char *Data_path);
 static void *MonitorStart(void *arg);
 int get_config_parameters(char *server, char *platform_id);
 
+int mf_user_metric_with_timestamp(char *user_defined_time_stamp, char *metric_name, char *value)
+{
+	if(DataPath[0] == '\0') {
+		pid = api_prepare(DataPath);
+	}
+	/*create and open the file*/
+	char FileName[256] = {'\0'};
+	sprintf(FileName, "%s/%s", DataPath, "user_defined");
+	FILE *fp = fopen(FileName, "a"); //append data to the end of the file
+	if (fp == NULL) {
+		printf("ERROR: Could not create file: %s\n", FileName);
+		return 0;
+	}
+
+    fprintf(fp, "\"local_timestamp\":\"%s\", \"%s\":%s\n", user_defined_time_stamp, metric_name, value);
+	/*close the file*/
+	fclose(fp);
+	return 1;
+}
+
+
 int mf_user_metric(char *metric_name, char *value)
 {
 	if(DataPath[0] == '\0') {

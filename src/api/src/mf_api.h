@@ -17,6 +17,7 @@ extern int keep_local_data_flag;
 extern char parameters_name[9][32];
 extern float parameters_value[9];
 
+int mf_user_metric_with_timestamp(char *user_defined_time_stamp, char *metric_nam, char *value);
 int mf_user_metric(char *metric_name, char *value);
 /* 
 Get the pid, and setup the DataPath for data storage 
