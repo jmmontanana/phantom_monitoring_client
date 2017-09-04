@@ -140,8 +140,8 @@ int resources_stat_all_and_calculate(int pid, resources_cpu *before, resources_c
 						(after->global_CPU_time - before->global_CPU_time);	
 	}
 	
-	result->RAM_usage_rate = pid_VmRSS * 100.0 /MemTotal;
-	result->swap_usage_rate = pid_VmSwap * 100.0 /SwapTotal;
+	result->RAM_usage_rate = (MemTotal==0) ? 0 : pid_VmRSS * 100.0 /MemTotal;
+	result->swap_usage_rate = (SwapTotal==0) ? 0 : pid_VmSwap * 100.0 /SwapTotal;
 
 	/*replace the cpu time*/
 	before->process_CPU_time = after->process_CPU_time;
